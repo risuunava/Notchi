@@ -8,7 +8,7 @@
 
 ## Ringkasan
 
-Notchi adalah overlay notch native untuk Windows 10 dan Windows 11 yang terinspirasi oleh notch macOS dan Dynamic Island. Aplikasi tetap berada di atas desktop, tampil ringkas saat idle, dan mengembang saat kursor diarahkan untuk menampilkan kontrol media serta informasi sistem. Aplikasi dibangun dengan C#, WPF, dan .NET 8 tanpa Electron sehingga tetap ringan dan responsif.
+Notchi adalah overlay notch native untuk Windows 10 dan Windows 11 yang terinspirasi oleh notch macOS dan Dynamic Island. Aplikasi tetap berada di atas desktop, tampil ringkas saat idle, dan mengembang saat kursor diarahkan untuk menampilkan kontrol media, kalender, informasi sistem, serta alat file. Aplikasi dibangun dengan C#, WPF, dan .NET 8 tanpa Electron sehingga tetap ringan dan responsif.
 
 ## Spesifikasi Sistem
 
@@ -33,14 +33,20 @@ Unduh `NotchiSetup-x64.exe` versi terbaru dari halaman [Releases](https://github
 | :--- | :--- |
 | Overlay selalu di atas | Menjaga notch tetap terlihat di atas jendela lain tanpa muncul di taskbar. |
 | Mode ringkas dan mengembang | Tampil ringkas saat idle dan mengembang dengan animasi halus saat kursor diarahkan. |
+| Tampilan idle berpaginasi | Tampilan idle yang mengembang memiliki tiga halaman yang dinavigasi dengan scroll mouse: Kalender, Media terakhir, dan Metrik, dengan transisi animasi. |
 | Kontrol media | Terintegrasi dengan Windows System Media Transport Controls untuk judul lagu, artis, album art, aplikasi sumber, waktu berjalan, durasi, seek, play/pause, serta previous/next. |
-| Dashboard sistem | Menampilkan jam ringkas yang bersih dengan gradasi halus pada waktu, tanggal, status baterai, serta penggunaan CPU, RAM, dan disk secara langsung. |
-| Catatan | Menyediakan jendela catatan khusus dengan penyimpanan otomatis. |
+| Media terakhir | Mengingat lagu terakhir yang diputar, termasuk album art, kontrol pemutaran, dan seek, setelah sesi media berakhir. |
+| Dashboard sistem | Menampilkan jam ringkas yang bersih dengan gradasi halus pada waktu, tanggal, serta bar CPU, RAM, disk, dan baterai secara langsung. |
+| Catatan kalender | Klik tanggal mana pun untuk membuat, mengubah, atau menghapus catatan. Tanggal dengan catatan menampilkan titik indikator dan pratinjau saat hover, serta Shift + scroll untuk berpindah tanggal. |
+| Catatan | Menyediakan jendela catatan khusus yang dapat diubah ukurannya dengan penyimpanan otomatis. |
 | File drop shelf | Menerima file yang ditarik ke notch dan mendukung membuka file, menampilkan di Explorer, menyalin path, membuka semua item, menghapus item satu per satu, serta membersihkan daftar. |
+| Konversi file | Tarik file PDF, DOC, atau DOCX ke notch untuk mengonversi PDF ke DOCX atau dokumen Word ke PDF langsung ke folder Downloads, dengan progres inline dan deteksi PDF hasil scan. |
+| Feature bar | Bar bawah dengan indikator aktif di mana hanya satu panel yang terbuka pada satu waktu, beranimasi keluar dari logo tengah. Klik logo untuk memulai ulang aplikasi. |
+| Jendela dapat digeser | Popup catatan, file shelf, dan pengaturan dapat digeser, mengingat posisi terakhirnya, dan menempel magnetis ke tepi layar. |
 | Penempatan di layar | Notch dapat digeser ke atas tengah, kiri tengah, atau kanan tengah layar. |
 | Posisi tersimpan | Menyimpan anchor terakhir dan memulihkannya saat aplikasi dibuka kembali. |
 | Pintasan global | Menyembunyikan atau menampilkan notch dari mana saja menggunakan pintasan sistem yang dapat disesuaikan (default `Ctrl+Shift+N`). |
-| Pengaturan | Mengatur metrik sistem yang ditampilkan, bahasa antarmuka (Bahasa Indonesia atau English), pintasan sembunyikan/tampilkan, dan apakah aplikasi berjalan otomatis saat Windows menyala. |
+| Pengaturan | Mengatur bahasa antarmuka (Bahasa Indonesia atau English), pintasan sembunyikan/tampilkan, dan apakah aplikasi berjalan otomatis saat Windows menyala. Metrik selalu tampil saat mengembang. |
 | Desain ringan | Menggunakan rendering native WPF dengan pemakaian CPU idle rendah dan memori privat di bawah 100 MB. |
 
 ## Tampilan
@@ -78,9 +84,9 @@ Tangkapan layar berikut menunjukkan tampilan ringkas dan mengembang dari setiap 
 
 | Versi | Tanggal Rilis | Status |
 | :--- | :--- | :--- |
-| 1.1.0 | 25 Oktober 2026 | Stabil terbaru |
+| 2.0.0 | 31 Oktober 2026 | Stabil terbaru |
 
-Versi 1.1.0 adalah rilis stabil saat ini. Rilis ini menambahkan pintasan global yang dapat disesuaikan untuk menyembunyikan atau menampilkan Notchi (default `Ctrl+Shift+N`), tombol hapus per item pada file drop shelf, dan opsi bahasa Inggris di Pengaturan, serta tampilan jam ringkas yang lebih bersih dengan gradasi halus pada waktu. Catatan rilis selengkapnya tersedia di halaman [Releases](https://github.com/risuunava/Notchi/releases).
+Versi 2.0.0 adalah rilis stabil saat ini. Rilis ini menghadirkan feature bar yang didesain ulang, tampilan idle berpaginasi dengan halaman Kalender, Media terakhir, dan Metrik, catatan per tanggal pada kalender, serta konversi PDF/DOCX/DOC bawaan, bersama popup yang dapat digeser, mengingat posisinya, dan menempel magnetis ke tepi layar. Catatan rilis selengkapnya tersedia di halaman [Releases](https://github.com/risuunava/Notchi/releases).
 
 ## Kontribusi
 

@@ -8,7 +8,7 @@
 
 ## Overview
 
-Notchi is a native notch overlay for Windows 10 and Windows 11, inspired by the macOS notch and Dynamic Island. It stays above the desktop, remains compact while idle, and expands on hover to show media controls and system information. The application is built with C#, WPF, and .NET 8 without Electron, keeping it lightweight and responsive.
+Notchi is a native notch overlay for Windows 10 and Windows 11, inspired by the macOS notch and Dynamic Island. It stays above the desktop, remains compact while idle, and expands on hover to show media controls, a calendar, system information, and file tools. The application is built with C#, WPF, and .NET 8 without Electron, keeping it lightweight and responsive.
 
 ## System Requirements
 
@@ -33,14 +33,20 @@ Download the latest `NotchiSetup-x64.exe` from the [Releases](https://github.com
 | :--- | :--- |
 | Always-on-top overlay | Keeps the notch visible above other windows without appearing in the taskbar. |
 | Compact and expanded modes | Stays compact while idle and expands smoothly when the cursor moves over it. |
+| Paginated idle view | The expanded idle state has three pages navigated with the mouse wheel: Calendar, Last media, and Metrics, with animated slide transitions. |
 | Media controls | Integrates with Windows System Media Transport Controls for track title, artist, album art, source app, elapsed time, duration, seeking, play/pause, and previous/next. |
-| System dashboard | Displays a clean compact clock with a subtle time gradient, date, battery status, and live CPU, RAM, and disk usage. |
-| Notes | Provides a dedicated notes window with automatic saving. |
+| Last media | Remembers the most recently played track, including artwork, playback controls, and seeking, after the media session ends. |
+| System dashboard | Displays a clean compact clock with a subtle time gradient, date, and live CPU, RAM, disk, and battery bars. |
+| Calendar notes | Click any date to create, edit, or delete a note. Dates with notes show an indicator dot and a hover preview, and Shift + scroll navigates between dates. |
+| Notes | Provides a dedicated, resizable notes window with automatic saving. |
 | File drop shelf | Accepts files dragged onto the notch and supports opening files, revealing them in Explorer, copying paths, opening all items, removing individual items, and clearing the list. |
+| File conversion | Drag PDF, DOC, or DOCX files onto the notch to convert PDF to DOCX or Word documents to PDF directly into Downloads, with inline progress and scanned-PDF detection. |
+| Feature bar | A bottom bar with active indicators where only one panel opens at a time, animated outward from the center logo. Clicking the logo restarts the app. |
+| Draggable windows | The note, file shelf, and settings popups can be dragged, remember their last position, and snap magnetically to screen edges. |
 | Screen anchoring | Lets the notch be dragged to the top center, left center, or right center of the screen. |
 | Persistent position | Saves the last anchor and restores it on the next launch. |
 | Global shortcut | Hides or shows the notch from anywhere using a customizable system-wide shortcut (default `Ctrl+Shift+N`). |
-| Settings | Controls which system metrics are visible, the interface language (Bahasa Indonesia or English), the hide/show shortcut, and whether the app starts with Windows. |
+| Settings | Controls the interface language (Bahasa Indonesia or English), the hide/show shortcut, and whether the app starts with Windows. Metrics are always visible when expanded. |
 | Lightweight design | Uses native WPF rendering with low idle CPU usage and private memory below 100 MB. |
 
 ## Preview
@@ -78,9 +84,9 @@ The screenshots below show the compact and expanded states of the main views.
 
 | Version | Released | Status |
 | :--- | :--- | :--- |
-| 1.1.0 | October 25, 2026 | Latest stable |
+| 2.0.0 | October 31, 2026 | Latest stable |
 
-Version 1.1.0 is the current stable release. It adds a customizable global shortcut to hide or show Notchi (default `Ctrl+Shift+N`), per-item removal in the file drop shelf, and an English language option in Settings, along with a cleaner compact clock that uses a subtle time gradient. Full release notes are available on the [Releases](https://github.com/risuunava/Notchi/releases) page.
+Version 2.0.0 is the current stable release. It introduces a redesigned feature bar, a paginated idle view with Calendar, Last media, and Metrics pages, per-date calendar notes, and built-in PDF/DOCX/DOC conversion, along with draggable popups that remember their position and snap magnetically to screen edges. Full release notes are available on the [Releases](https://github.com/risuunava/Notchi/releases) page.
 
 ## Contributing
 
