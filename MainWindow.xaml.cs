@@ -120,6 +120,8 @@ namespace WindowsNotch
         private readonly DispatcherTimer _statusTimer = new() { Interval = TimeSpan.FromSeconds(3.5) };
         private readonly SmtcService _smtc = new();
         private readonly SystemStatusService _systemStatus = new();
+        private MobileServerService? _mobileServer;
+        private PairingRequest? _currentPairingRequest;
         private AppSettings _settings = new();
         private MediaInfo? _media;
         private MediaInfo? _lastMedia;
@@ -369,6 +371,8 @@ namespace WindowsNotch
             _mediaTimer.Start();
             ApplyMedia(null);
             _ = _smtc.InitializeAsync();
+
+            InitMobileServer();
         }
 
         private void WireMediaControls()
@@ -706,6 +710,7 @@ namespace WindowsNotch
             settings.SettingsChanged += (s, e) =>
             {
                 _hotkey.Register(_settings.HotkeyModifiers, _settings.HotkeyKey);
+                ApplyMobileServerSettings();
             };
 
             settings.Closed += (s, e) =>
@@ -2523,8 +2528,113 @@ namespace WindowsNotch
             }
         }
 
+        private void InitMobileServer()
+        {
+            _mobileServer = new MobileServerService(_smtc, _systemStatus);
+
+            _mobileServer.OnFileReceived += (path) =>
+            {
+                Dispatcher.BeginInvoke(() =>
+                {
+                    ShowDropShelf(new[] { path });
+                    ShowStatusPopup($"File diterima: {Path.GetFileName(path)}", isError: false);
+                });
+            };
+
+            _mobileServer.OnTextReceived += (text) =>
+            {
+                Dispatcher.BeginInvoke(() =>
+                {
+                    try
+                    {
+                        string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                        string downloadsFolder = Path.Combine(userProfile, "Downloads");
+                        Directory.CreateDirectory(downloadsFolder);
+                        string noteFile = Path.Combine(downloadsFolder, $"Notchi_Mobile_Note_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
+                        File.WriteAllText(noteFile, text);
+                        ShowDropShelf(new[] { noteFile });
+                        ShowStatusPopup("Catatan teks diterima dari HP", isError: false);
+                    }
+                    catch { }
+                });
+            };
+
+            PairingService.OnPairingRequested += OnPairingRequestedFromDevice;
+
+            DenyPairButton.Click += (s, e) =>
+            {
+                PairingPromptPopup.IsOpen = false;
+                if (_currentPairingRequest != null)
+                {
+                    _currentPairingRequest.ApprovalSource.TrySetResult(false);
+                    _currentPairingRequest = null;
+                }
+            };
+
+            AllowPairButton.Click += (s, e) =>
+            {
+                PairingPromptPopup.IsOpen = false;
+                if (_currentPairingRequest != null)
+                {
+                    _currentPairingRequest.ApprovalSource.TrySetResult(true);
+                    _currentPairingRequest = null;
+                }
+            };
+
+            ApplyMobileServerSettings();
+        }
+
+        private async void ApplyMobileServerSettings()
+        {
+            if (_mobileServer == null) return;
+
+            try
+            {
+                if (_settings.IsMobileServerEnabled)
+                {
+                    if (!_mobileServer.IsRunning)
+                    {
+                        await _mobileServer.StartAsync(_settings.MobileServerPort);
+                    }
+                }
+                else
+                {
+                    if (_mobileServer.IsRunning)
+                    {
+                        await _mobileServer.StopAsync();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                CrashLogger.Log("MobileServer.ApplySettings", ex);
+                ShowStatusPopup("Gagal memulai server Notchi Mobile", isError: true);
+            }
+        }
+
+        private Task OnPairingRequestedFromDevice(PairingRequest req)
+        {
+            return Dispatcher.InvokeAsync(async () =>
+            {
+                _currentPairingRequest = req;
+                PairingPromptDeviceName.Text = $"Izinkan perangkat \"{req.DeviceName}\" terhubung?";
+                PairingPromptPopup.IsOpen = true;
+
+                try
+                {
+                    await req.ApprovalSource.Task;
+                }
+                finally
+                {
+                    PairingPromptPopup.IsOpen = false;
+                }
+            }).Task;
+        }
+
         protected override void OnClosed(EventArgs e)
         {
+            PairingService.OnPairingRequested -= OnPairingRequestedFromDevice;
+            _mobileServer?.Dispose();
             _quickConversionCts?.Cancel();
             _statusTimer.Stop();
             StatusPopup.IsOpen = false;

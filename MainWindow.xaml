@@ -1030,6 +1030,59 @@
             </Border>
         </Popup>
         
+        <Popup x:Name="PairingPromptPopup"
+               PlacementTarget="{Binding ElementName=PillHost}"
+               Placement="Bottom"
+               HorizontalOffset="0"
+               VerticalOffset="10"
+               AllowsTransparency="True"
+               PopupAnimation="Fade"
+               StaysOpen="True"
+               Focusable="False">
+            <Border Background="#1C1C1E" BorderBrush="#3D7EFF" BorderThickness="1.5"
+                    CornerRadius="10" Padding="12,10" MinWidth="260">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="16" ShadowDepth="4" Opacity="0.45" Color="Black"/>
+                </Border.Effect>
+                <StackPanel>
+                    <TextBlock x:Name="PairingPromptDeviceName"
+                               Text="Izinkan perangkat menghubung?"
+                               Foreground="#F5F5F7" FontSize="11" FontWeight="SemiBold"
+                               HorizontalAlignment="Center" TextWrapping="Wrap"/>
+                    <TextBlock Text="Perangkat ingin dipasangkan ke PC ini."
+                               Foreground="#85858D" FontSize="9"
+                               HorizontalAlignment="Center" Margin="0,2,0,8"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="DenyPairButton" Content="Tolak"
+                                Background="#2C2C2E" Foreground="#FF6B6B"
+                                BorderThickness="1" BorderBrush="#3A3A3E"
+                                Padding="0,4" Margin="0,0,4,0"
+                                FontSize="10" FontWeight="SemiBold" Cursor="Hand">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="5"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+                        <Button x:Name="AllowPairButton" Grid.Column="1" Content="Izinkan"
+                                Background="#3D7EFF" Foreground="#FFFFFF"
+                                BorderThickness="0" Padding="0,4"
+                                Margin="4,0,0,0" FontSize="10" FontWeight="SemiBold" Cursor="Hand">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="5"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Popup>
+
     </Grid>
 </Window>
 
