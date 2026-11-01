@@ -105,5 +105,14 @@
     <sys:String x:Key="CalendarShiftScrollHint">Shift + Scroll untuk geser tanggal</sys:String>
 
 
+    <sys:String x:Key="MobileSection">NOTCHI MOBILE</sys:String>
+    <sys:String x:Key="MobileServerTitle">Server Notchi Mobile</sys:String>
+    <sys:String x:Key="MobileServerDescription">Izinkan koneksi dari aplikasi HP</sys:String>
+    <sys:String x:Key="MobilePort">Port Server</sys:String>
+    <sys:String x:Key="MobileMaxFileSize">Batas File (MB)</sys:String>
+    <sys:String x:Key="PairNewDevice">Pasangkan Perangkat Baru</sys:String>
+    <sys:String x:Key="PairedDevices">Perangkat Terhubung</sys:String>
+    <sys:String x:Key="NoPairedDevices">Belum ada perangkat terhubung</sys:String>
+    <sys:String x:Key="Revoke">Cabut</sys:String>
 </ResourceDictionary>
 

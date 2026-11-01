@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -36,9 +37,22 @@ namespace WindowsNotch
             // Tampilkan hotkey saat ini
             HotkeyLabel.Text = FormatHotkey(_settings.HotkeyModifiers, _settings.HotkeyKey);
 
+            // Notchi Mobile settings
+            MobileServerToggle.IsChecked = _settings.IsMobileServerEnabled;
+            MobilePortBox.Text = _settings.MobileServerPort.ToString();
+            MobileMaxFileSizeBox.Text = _settings.MobileMaxFileSizeMb.ToString();
+            RefreshDevicesList();
+
             AutoStartToggle.Click += OnAutoStartToggleChanged;
             IndonesianOption.Checked += OnLanguageChanged;
             EnglishOption.Checked += OnLanguageChanged;
+            MobileServerToggle.Click += OnMobileServerToggleChanged;
+            MobilePortBox.LostFocus += OnMobilePortLostFocus;
+            MobileMaxFileSizeBox.LostFocus += OnMobileMaxFileSizeLostFocus;
+            PairDeviceButton.Click += OnPairDeviceButtonClick;
+            GeneralTabRadio.Checked += (s, e) => SwitchTab(isMobile: false);
+            MobileTabRadio.Checked += (s, e) => SwitchTab(isMobile: true);
+
             CloseButton.Click += (s, e) => CloseFromUser();
 
             var headerDrag = new WindowDragHelper(this, HeaderRow);
@@ -75,9 +89,88 @@ namespace WindowsNotch
             _initializing = false;
         }
 
+        private void SwitchTab(bool isMobile)
+        {
+            if (GeneralTabContent == null || MobileTabContent == null) return;
+            GeneralTabContent.Visibility = isMobile ? Visibility.Collapsed : Visibility.Visible;
+            MobileTabContent.Visibility = isMobile ? Visibility.Visible : Visibility.Collapsed;
+        }
+
         public event EventHandler? SettingsChanged;
 
         public bool ClosedByUser { get; private set; }
+
+        private void RefreshDevicesList()
+        {
+            var devices = DeviceStore.Load();
+            DevicesItemsControl.ItemsSource = null;
+            DevicesItemsControl.ItemsSource = devices;
+            NoDevicesLabel.Visibility = devices.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void OnMobileServerToggleChanged(object? sender, RoutedEventArgs e)
+        {
+            if (_initializing) return;
+
+            bool enabled = MobileServerToggle.IsChecked == true;
+            _settings.IsMobileServerEnabled = enabled;
+            SaveSettings();
+        }
+
+        private void OnMobilePortLostFocus(object sender, RoutedEventArgs e)
+        {
+            if (int.TryParse(MobilePortBox.Text, out int port) && port >= 1024 && port <= 65535)
+            {
+                if (_settings.MobileServerPort != port)
+                {
+                    _settings.MobileServerPort = port;
+                    SaveSettings();
+                }
+            }
+            else
+            {
+                MobilePortBox.Text = _settings.MobileServerPort.ToString();
+            }
+        }
+
+        private void OnMobileMaxFileSizeLostFocus(object sender, RoutedEventArgs e)
+        {
+            if (long.TryParse(MobileMaxFileSizeBox.Text, out long mb) && mb > 0)
+            {
+                if (_settings.MobileMaxFileSizeMb != mb)
+                {
+                    _settings.MobileMaxFileSizeMb = mb;
+                    SaveSettings();
+                }
+            }
+            else
+            {
+                MobileMaxFileSizeBox.Text = _settings.MobileMaxFileSizeMb.ToString();
+            }
+        }
+
+        private void OnPairDeviceButtonClick(object sender, RoutedEventArgs e)
+        {
+            if (!_settings.IsMobileServerEnabled)
+            {
+                SetStatus("Aktifkan server terlebih dahulu", isError: true);
+                return;
+            }
+
+            var qrWindow = new PairingQrWindow(_settings.MobileServerPort, _settings.PcId ?? Guid.NewGuid().ToString());
+            qrWindow.Show();
+        }
+
+        private void OnRevokeDeviceClick(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is string deviceId)
+            {
+                DeviceStore.RevokeDevice(deviceId);
+                MobileServerService.Instance?.DisconnectDevice(deviceId);
+                RefreshDevicesList();
+                SetStatus("Perangkat dicabut", isError: false);
+            }
+        }
 
         private void OnHotkeyRecorderClick(object sender, MouseButtonEventArgs e)
         {
@@ -288,7 +381,6 @@ namespace WindowsNotch
             if (vk != 0)
             {
                 var key = KeyInterop.KeyFromVirtualKey((int)vk);
-                // Sederhanakan nama key agar lebih mudah dibaca
                 string keyName = key switch
                 {
                     Key.Space => "Space",
