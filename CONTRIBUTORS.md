@@ -15,6 +15,7 @@ This document recognizes the individuals who contribute to the development, main
 | Contributor | Role | Specific Contributions |
 | :--- | :--- | :--- |
 | **Aren** ([@Arennbukangula](https://github.com/Arennbukangula)) | Technical Writer & Web Developer | Authoring, organizing, and refining technical documentation, plus building and maintaining the official download website for Notchi. |
+| **Pataya** ([@patayaaaa](https://github.com/patayaaaa)) | UI/UX Designer | Designed and redesigned the Notchi user interface for v2.0.0. |
 | **[@username1](https://github.com)** | Feature Developer | Implemented module enhancements and new functionality. |
 | **[@username2](https://github.com)** | Bug Hunter | Identified and reported critical bugs and edge cases. |
 | **[@username3](https://github.com)** | Code Reviewer | Evaluated pull requests and ensured code quality standards. |
