@@ -69,6 +69,19 @@ namespace WindowsNotch
             _timer.Change(Timeout.Infinite, Timeout.Infinite);
         }
 
+        public SystemStatusSnapshot GetCurrentSnapshot()
+        {
+            lock (_gate)
+            {
+                if (!_running && !_hasCpuSample)
+                {
+                    _hasCpuSample = TrySampleCpuBaseline();
+                    RefreshSlowMetrics();
+                }
+                return BuildSnapshot();
+            }
+        }
+
         private void Tick()
         {
             SystemStatusSnapshot? snapshot = null;

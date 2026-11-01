@@ -13,10 +13,12 @@ namespace WindowsNotch
         public string Title { get; init; } = string.Empty;
         public string Artist { get; init; } = string.Empty;
         public BitmapImage? AlbumArt { get; init; }
+        public byte[]? AlbumArtBytes { get; init; }
         public string SourceAppId { get; init; } = string.Empty;
         public bool IsPlaying { get; init; }
         public TimeSpan Position { get; init; }
         public TimeSpan Duration { get; init; }
+        public int ArtVersion { get; init; }
     }
 
     /// <summary>
@@ -33,6 +35,8 @@ namespace WindowsNotch
         private GlobalSystemMediaTransportControlsSessionManager? _manager;
         private GlobalSystemMediaTransportControlsSession? _session;
         private BitmapImage? _cachedArt;
+        private byte[]? _cachedArtBytes;
+        private int _artVersion;
         private string _cachedArtKey = string.Empty;
         private DateTime _artKeyChangedAt;
         private readonly System.Threading.SemaphoreSlim _refreshGate = new(1, 1);
@@ -47,6 +51,11 @@ namespace WindowsNotch
 
         /// <summary>Dipanggil setiap data media berubah; null berarti tidak ada sesi media.</summary>
         public event Action<MediaInfo?>? MediaChanged;
+
+        public MediaInfo? CurrentMedia { get; private set; }
+
+        public byte[]? GetCurrentArtworkBytes() => _cachedArtBytes;
+        public int CurrentArtVersion => _artVersion;
 
         public async Task InitializeAsync()
         {
@@ -91,6 +100,7 @@ namespace WindowsNotch
                     DetachSession();
                     _session = next;
                     _cachedArt = null;
+                    _cachedArtBytes = null;
                     _cachedArtKey = string.Empty;
                 }
 
@@ -165,6 +175,7 @@ namespace WindowsNotch
                 var session = _session;
                 if (session == null)
                 {
+                    CurrentMedia = null;
                     MediaChanged?.Invoke(null);
                     return;
                 }
@@ -189,6 +200,8 @@ namespace WindowsNotch
                     _cachedArtKey = artKey;
                     _artKeyChangedAt = DateTime.UtcNow;
                     _cachedArt = null;
+                    _cachedArtBytes = null;
+                    _artVersion++;
                 }
 
                 // Chrome kadang mengirim icon aplikasi lebih dulu dan artwork video
@@ -197,24 +210,34 @@ namespace WindowsNotch
                 bool insideRetryWindow = DateTime.UtcNow - _artKeyChangedAt < ArtRetryWindow;
                 if (_cachedArt == null || insideRetryWindow)
                 {
-                    var art = await LoadThumbnailAsync(properties.Thumbnail);
-                    if (art != null)
+                    var (art, bytes) = await LoadThumbnailWithBytesAsync(properties.Thumbnail);
+                    if (art != null && bytes != null)
                     {
+                        if (_cachedArtBytes == null || !bytes.SequenceEqual(_cachedArtBytes))
+                        {
+                            _artVersion++;
+                        }
                         _cachedArt = art;
+                        _cachedArtBytes = bytes;
                     }
                 }
 
-                MediaChanged?.Invoke(new MediaInfo
+                var mediaInfo = new MediaInfo
                 {
                     Title = title,
                     Artist = artist,
                     AlbumArt = _cachedArt,
+                    AlbumArtBytes = _cachedArtBytes,
                     SourceAppId = sourceAppId,
                     IsPlaying = playback.PlaybackStatus ==
                                 GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing,
                     Position = GetPosition(),
-                    Duration = timeline.EndTime
-                });
+                    Duration = timeline.EndTime,
+                    ArtVersion = _artVersion
+                };
+
+                CurrentMedia = mediaInfo;
+                MediaChanged?.Invoke(mediaInfo);
             }
             catch
             {
@@ -271,6 +294,24 @@ namespace WindowsNotch
             catch { /* sesi sudah tidak valid */ }
         }
 
+        public async Task PlayAsync()
+        {
+            try
+            {
+                if (_session != null) await _session.TryPlayAsync();
+            }
+            catch { /* sesi sudah tidak valid */ }
+        }
+
+        public async Task PauseAsync()
+        {
+            try
+            {
+                if (_session != null) await _session.TryPauseAsync();
+            }
+            catch { /* sesi sudah tidak valid */ }
+        }
+
         public async Task NextAsync()
         {
             try
@@ -299,15 +340,15 @@ namespace WindowsNotch
             catch { /* sesi sudah tidak valid */ }
         }
 
-        private static async Task<BitmapImage?> LoadThumbnailAsync(
+        private static async Task<(BitmapImage?, byte[]?)> LoadThumbnailWithBytesAsync(
             IRandomAccessStreamReference? reference)
         {
-            if (reference == null) return null;
+            if (reference == null) return (null, null);
 
             try
             {
                 using var stream = await reference.OpenReadAsync();
-                if (stream.Size == 0) return null;
+                if (stream.Size == 0) return (null, null);
 
                 var size = (int)Math.Min(stream.Size, 4 * 1024 * 1024);
                 byte[] buffer;
@@ -319,7 +360,7 @@ namespace WindowsNotch
                     reader.ReadBytes(buffer);
                 }
 
-                if (buffer.Length == 0) return null;
+                if (buffer.Length == 0) return (null, null);
 
                 var image = new BitmapImage();
                 image.BeginInit();
@@ -327,11 +368,11 @@ namespace WindowsNotch
                 image.StreamSource = new MemoryStream(buffer);
                 image.EndInit();
                 image.Freeze();
-                return image;
+                return (image, buffer);
             }
             catch
             {
-                return null;
+                return (null, null);
             }
         }
 
