@@ -142,7 +142,7 @@ namespace WindowsNotch
 
             if (OnPairingRequested != null)
             {
-                _ = OnPairingRequested.Invoke(req);
+                await OnPairingRequested.Invoke(req);
             }
             else
             {

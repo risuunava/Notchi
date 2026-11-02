@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -2614,21 +2614,26 @@ namespace WindowsNotch
 
         private Task OnPairingRequestedFromDevice(PairingRequest req)
         {
-            return Dispatcher.InvokeAsync(async () =>
-            {
-                _currentPairingRequest = req;
-                PairingPromptDeviceName.Text = $"Izinkan perangkat \"{req.DeviceName}\" terhubung?";
-                PairingPromptPopup.IsOpen = true;
+            var tcs = new System.Threading.Tasks.TaskCompletionSource();
 
+            Dispatcher.BeginInvoke(async () =>
+            {
                 try
                 {
+                    _currentPairingRequest = req;
+                    PairingPromptDeviceName.Text = $"Izinkan perangkat \"{req.DeviceName}\" terhubung?";
+                    PairingPromptPopup.IsOpen = true;
+
                     await req.ApprovalSource.Task;
                 }
                 finally
                 {
                     PairingPromptPopup.IsOpen = false;
+                    tcs.TrySetResult();
                 }
-            }).Task;
+            });
+
+            return tcs.Task;
         }
 
         protected override void OnClosed(EventArgs e)
