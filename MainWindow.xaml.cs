@@ -130,6 +130,8 @@ namespace WindowsNotch
         private int _idlePage;
         private bool _isSeeking;
         private bool _isExpanded;
+        private bool _domeMode;
+        private DateTime _lastDomeClick;
         private bool _isDragging;
         private bool _dragMoved;
         private bool _isFileDragOver;
@@ -1253,8 +1255,76 @@ namespace WindowsNotch
                 return;
             }
 
+            if (_domeMode)
+            {
+                // Mode bukit: lengkungan hitam kecil, tanpa isi.
+                NotchSleeve.Data = CreateDomeGeometry(w, h);
+                NotchShape.Visibility = Visibility.Collapsed;
+                NotchAccent.Visibility = Visibility.Collapsed;
+                NotchSheen.Visibility = Visibility.Collapsed;
+                NotchOuterBorder.Visibility = Visibility.Collapsed;
+                NotchBorder.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            NotchShape.Visibility = Visibility.Visible;
+            NotchAccent.Visibility = Visibility.Visible;
+            NotchSheen.Visibility = Visibility.Visible;
+            NotchOuterBorder.Visibility = Visibility.Visible;
+            NotchBorder.Visibility = Visibility.Visible;
             NotchSleeve.Data = CreateSleeveGeometry(w, h);
             NotchShape.Data = CreateInnerCapsuleGeometry(w, h);
+        }
+
+        private Geometry CreateDomeGeometry(double w, double h)
+        {
+            // Kedalaman bukit dibuat kecil/tipis dan mengikuti sisi yang menempel.
+            double depth = Math.Min(16, Math.Min(w, h) * 0.45);
+            var geometry = new StreamGeometry();
+            using (StreamGeometryContext ctx = geometry.Open())
+            {
+                switch (_anchor)
+                {
+                    case NotchAnchor.BottomCenter:
+                        ctx.BeginFigure(new Point(0, h), isFilled: true, isClosed: true);
+                        ctx.LineTo(new Point(w, h), true, false);
+                        ctx.BezierTo(new Point(w * 0.66, h - depth),
+                                     new Point(w * 0.34, h - depth),
+                                     new Point(0, h), true, false);
+                        break;
+
+                    case NotchAnchor.LeftCenter:
+                        ctx.BeginFigure(new Point(0, 0), isFilled: true, isClosed: true);
+                        ctx.LineTo(new Point(0, h), true, false);
+                        ctx.BezierTo(new Point(depth, h * 0.66),
+                                     new Point(depth, h * 0.34),
+                                     new Point(0, 0), true, false);
+                        break;
+
+                    case NotchAnchor.RightCenter:
+                        ctx.BeginFigure(new Point(w, 0), isFilled: true, isClosed: true);
+                        ctx.LineTo(new Point(w, h), true, false);
+                        ctx.BezierTo(new Point(w - depth, h * 0.66),
+                                     new Point(w - depth, h * 0.34),
+                                     new Point(w, 0), true, false);
+                        break;
+
+                    default: // TopCenter
+                        ctx.BeginFigure(new Point(0, 0), isFilled: true, isClosed: true);
+                        ctx.LineTo(new Point(w, 0), true, false);
+                        ctx.BezierTo(new Point(w * 0.66, depth),
+                                     new Point(w * 0.34, depth),
+                                     new Point(0, 0), true, false);
+                        break;
+                }
+            }
+            geometry.Freeze();
+            return geometry;
+        }
+
+        private void UpdateDomeVisibility()
+        {
+            ContentRoot.Visibility = _domeMode ? Visibility.Collapsed : Visibility.Visible;
         }
 
         private Geometry CreateSleeveGeometry(double w, double h)
@@ -1663,7 +1733,34 @@ namespace WindowsNotch
 
             if (!_dragMoved)
             {
-                // Klik tanpa geser: kembalikan bentuk sesuai anchor
+                // Klik dua kali cepat: toggle mode bukit (dome hitam, tanpa isi)
+                var now = DateTime.Now;
+                bool isDouble = (now - _lastDomeClick).TotalMilliseconds <= 400;
+                _lastDomeClick = now;
+                if (isDouble)
+                {
+                    if (!_domeMode)
+                    {
+                        // Masuk mode bukit: sembunyikan isi, lalu mengecil halus ke dome.
+                        _domeMode = true;
+                        UpdateDomeVisibility();
+                        if (_isExpanded)
+                            CollapseNotch();
+                        else
+                            UpdateNotchShape(PillHost.RenderSize);
+                    }
+                    else
+                    {
+                        // Keluar mode bukit: tampilkan notch normal lagi.
+                        _domeMode = false;
+                        UpdateDomeVisibility();
+                        if (PillHost.IsMouseOver)
+                            ExpandNotch();
+                        else
+                            UpdateNotchShape(PillHost.RenderSize);
+                    }
+                    return;
+                }
                 UpdateNotchShape(PillHost.RenderSize);
                 return;
             }
@@ -2516,7 +2613,7 @@ namespace WindowsNotch
         // Saat kursor mouse masuk ke area Notch (Mekar)
         private void ExpandNotch()
         {
-            if (_isExpanded) return;
+            if (_isExpanded || _domeMode) return;
             _isExpanded = true;
             _animationVersion++;
 
