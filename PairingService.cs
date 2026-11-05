@@ -31,6 +31,12 @@ namespace WindowsNotch
         /// </summary>
         public static event Func<PairingRequest, Task>? OnPairingRequested;
 
+        /// <summary>
+        /// Dipicu saat pairing disetujui, agar jendela QR yang masih terbuka
+        /// bisa langsung ditutup.
+        /// </summary>
+        public static event Action? PairingApproved;
+
         public static string GeneratePairingToken()
         {
             byte[] bytes = RandomNumberGenerator.GetBytes(32);
@@ -66,6 +72,18 @@ namespace WindowsNotch
             lock (Gate)
             {
                 _currentPairingToken = null;
+            }
+        }
+
+        public static void NotifyPairingApproved()
+        {
+            try
+            {
+                PairingApproved?.Invoke();
+            }
+            catch
+            {
+                // Jangan gagalkan pairing hanya karena handler UI error
             }
         }
 
@@ -155,7 +173,13 @@ namespace WindowsNotch
 
             if (completedTask == req.ApprovalSource.Task)
             {
-                return await req.ApprovalSource.Task;
+                bool approved = await req.ApprovalSource.Task;
+                if (approved)
+                {
+                    NotifyPairingApproved();
+                }
+
+                return approved;
             }
 
             return false; // timeout

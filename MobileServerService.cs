@@ -224,23 +224,13 @@ namespace WindowsNotch
                 return;
             }
 
-            // Tampilkan approval prompt di PC notch
-            bool approved = await PairingService.RequestUserApprovalAsync(deviceId, deviceName);
-
-            // Setelah pairing dicoba (sukses atau gagal), pairing token langsung hangus
+            // Pairing lewat scan QR langsung disetujui tanpa prompt konfirmasi
             PairingService.InvalidatePairingToken();
-
-            if (!approved)
-            {
-                PairingService.RecordFailedAttempt(clientIp);
-                context.Response.StatusCode = 403;
-                await WriteErrorAsync(context, "pairing_denied", "Pengguna menolak koneksi perangkat ini di PC.");
-                return;
-            }
 
             // Hasilkan session token
             string sessionToken = PairingService.GenerateSessionToken();
             DeviceStore.AddOrUpdateDevice(deviceId, deviceName, sessionToken);
+            PairingService.NotifyPairingApproved();
 
             var res = new
             {

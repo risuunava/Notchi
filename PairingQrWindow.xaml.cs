@@ -43,11 +43,23 @@ namespace WindowsNotch
             };
             _timer.Start();
 
+            PairingService.PairingApproved += OnPairingApproved;
             CloseButton.Click += (s, e) => Close();
             PreviewKeyDown += (s, e) =>
             {
                 if (e.Key == Key.Escape) Close();
             };
+        }
+
+        private void OnPairingApproved()
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.BeginInvoke(new Action(Close));
+                return;
+            }
+
+            Close();
         }
 
         private void GenerateQrBitmap(string payload)
@@ -72,6 +84,7 @@ namespace WindowsNotch
 
         protected override void OnClosed(EventArgs e)
         {
+            PairingService.PairingApproved -= OnPairingApproved;
             _timer.Stop();
             base.OnClosed(e);
         }
