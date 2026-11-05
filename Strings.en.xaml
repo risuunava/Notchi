@@ -105,5 +105,14 @@
     <sys:String x:Key="CalendarShiftScrollHint">Shift + Scroll to navigate dates</sys:String>
 
 
+    <sys:String x:Key="MobileSection">NOTCHI MOBILE</sys:String>
+    <sys:String x:Key="MobileServerTitle">Notchi Mobile Server</sys:String>
+    <sys:String x:Key="MobileServerDescription">Allow connection from mobile app</sys:String>
+    <sys:String x:Key="MobilePort">Server Port</sys:String>
+    <sys:String x:Key="MobileMaxFileSize">Max File Size (MB)</sys:String>
+    <sys:String x:Key="PairNewDevice">Pair New Device</sys:String>
+    <sys:String x:Key="PairedDevices">Connected Devices</sys:String>
+    <sys:String x:Key="NoPairedDevices">No paired devices yet</sys:String>
+    <sys:String x:Key="Revoke">Revoke</sys:String>
 </ResourceDictionary>
 

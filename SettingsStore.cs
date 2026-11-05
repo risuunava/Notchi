@@ -19,22 +19,48 @@ namespace WindowsNotch
         {
             try
             {
-                if (!File.Exists(SettingsPath)) return new AppSettings();
+                if (!File.Exists(SettingsPath))
+                {
+                    var newSettings = new AppSettings();
+                    EnsurePcId(newSettings);
+                    return newSettings;
+                }
 
-                return JsonSerializer.Deserialize<AppSettings>(
+                var settings = JsonSerializer.Deserialize<AppSettings>(
                            File.ReadAllText(SettingsPath), SerializerOptions)
                        ?? new AppSettings();
+
+                if (EnsurePcId(settings))
+                {
+                    Save(settings);
+                }
+
+                return settings;
             }
             catch
             {
-                return new AppSettings();
+                var fallback = new AppSettings();
+                EnsurePcId(fallback);
+                return fallback;
             }
+        }
+
+        private static bool EnsurePcId(AppSettings settings)
+        {
+            if (string.IsNullOrWhiteSpace(settings.PcId))
+            {
+                settings.PcId = Guid.NewGuid().ToString();
+                return true;
+            }
+            return false;
         }
 
         public static bool Save(AppSettings settings)
         {
             try
             {
+                EnsurePcId(settings);
+
                 string? directory = Path.GetDirectoryName(SettingsPath);
                 if (!string.IsNullOrEmpty(directory))
                 {

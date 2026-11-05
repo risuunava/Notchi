@@ -25,5 +25,11 @@ namespace WindowsNotch
         public double? SettingsTop { get; set; }
         public double? DropShelfLeft { get; set; }
         public double? DropShelfTop { get; set; }
+
+        // Notchi Mobile Settings
+        public bool IsMobileServerEnabled { get; set; } = false;
+        public int MobileServerPort { get; set; } = 8765;
+        public long MobileMaxFileSizeMb { get; set; } = 500;
+        public string? PcId { get; set; }
     }
 }

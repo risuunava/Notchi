@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -22,9 +22,8 @@ namespace WindowsNotch
         private const double CollapsedWidth = 250;
         private const double CollapsedHeight = 40;
         private const double ExpandedWidth = 300;
-        private const double ExpandedHeight = 100;
+        private const double ExpandedHeight = 108;
         private const double IdleExpandedHorizontalMargin = 8;
-        private const double IdleExpandedTopMargin = 8;
         private const int IdleCalendarPage = 0;
         private const int IdleMediaPage = 1;
         private const int IdleMetricsPage = 2;
@@ -32,8 +31,11 @@ namespace WindowsNotch
         private const double SideCollapsedWidth = 40;
         private const double SideCollapsedHeight = 107;
         private const double SideExpandedWidth = 300;
-        private const double SideExpandedHeight = 107;
-        private const double SideCornerRadius = 20;
+        private const double SideExpandedHeight = 126;
+        private const double SleeveRim = 6;
+        private const double SleeveShoulderInset = 14;
+        private const double SleeveSpanInset = SleeveShoulderInset + SleeveRim;
+        private const double SleeveCornerRadius = 20;
         private const double FeatureBarHeight = 34;
         private const double FeatureBarGap = 4;
         private const double FeatureBarExtraHeight = FeatureBarGap + FeatureBarHeight + 10;
@@ -120,12 +122,16 @@ namespace WindowsNotch
         private readonly DispatcherTimer _statusTimer = new() { Interval = TimeSpan.FromSeconds(3.5) };
         private readonly SmtcService _smtc = new();
         private readonly SystemStatusService _systemStatus = new();
+        private MobileServerService? _mobileServer;
+        private PairingRequest? _currentPairingRequest;
         private AppSettings _settings = new();
         private MediaInfo? _media;
         private MediaInfo? _lastMedia;
         private int _idlePage;
         private bool _isSeeking;
         private bool _isExpanded;
+        private bool _domeMode;
+        private DateTime _lastDomeClick;
         private bool _isDragging;
         private bool _dragMoved;
         private bool _isFileDragOver;
@@ -160,6 +166,7 @@ namespace WindowsNotch
         private enum NotchAnchor
         {
             TopCenter,
+            BottomCenter,
             LeftCenter,
             RightCenter
         }
@@ -369,6 +376,8 @@ namespace WindowsNotch
             _mediaTimer.Start();
             ApplyMedia(null);
             _ = _smtc.InitializeAsync();
+
+            InitMobileServer();
         }
 
         private void WireMediaControls()
@@ -479,6 +488,12 @@ namespace WindowsNotch
 
             UpdateFeatureButtonStates();
 
+            // Jika sudah ditampilkan penuh, jangan memulai ulang animasi
+            // (mencegah animasi buka-tutup berkedip saat memanggil berulang)
+            if (FeatureMenuBar.Visibility == Visibility.Visible
+                && FeatureMenuBar.Width >= FeatureBarFullWidth)
+                return;
+
             FeatureMenuBar.Visibility = Visibility.Visible;
             FeatureMenuBar.IsHitTestVisible = true;
 
@@ -510,6 +525,9 @@ namespace WindowsNotch
 
         private void HideFeatureBar(bool immediate = false)
         {
+            // Jika sudah tersembunyi, jangan memulai ulang animasi
+            if (FeatureMenuBar.Visibility == Visibility.Collapsed) return;
+
             if (immediate)
             {
                 FeatureMenuBar.BeginAnimation(UIElement.OpacityProperty, null);
@@ -706,6 +724,7 @@ namespace WindowsNotch
             settings.SettingsChanged += (s, e) =>
             {
                 _hotkey.Register(_settings.HotkeyModifiers, _settings.HotkeyKey);
+                ApplyMobileServerSettings();
             };
 
             settings.Closed += (s, e) =>
@@ -774,6 +793,11 @@ namespace WindowsNotch
                 {
                     left = Left - window.Width - gap;
                     top = Top;
+                }
+                else if (_anchor == NotchAnchor.BottomCenter)
+                {
+                    left = Left + (Width - window.Width) / 2;
+                    top = Top - window.Height - gap;
                 }
                 else
                 {
@@ -1007,6 +1031,41 @@ namespace WindowsNotch
                     : GetSourceColor(_media.SourceAppId) ?? IdleAccent;
 
             NotchAccent.Fill = CreateAccentBrush(accent);
+            UpdateProgressFill(_media);
+        }
+
+        // Progress bar mengikuti warna sumber media dengan gradasi terang -> warna.
+        private void UpdateProgressFill(MediaInfo? media)
+        {
+            Color? sourceColor = media == null ? null : GetSourceColor(media.SourceAppId);
+            Brush brush = sourceColor is Color color
+                ? CreateProgressBrush(color)
+                : (TryFindResource("MediaProgressBrush") as Brush ?? Brushes.White);
+
+            ProgressSlider.Foreground = brush;
+            LastMediaProgressSlider.Foreground = brush;
+        }
+
+        private static Brush CreateProgressBrush(Color accent)
+        {
+            var brush = new LinearGradientBrush
+            {
+                StartPoint = new Point(0, 0),
+                EndPoint = new Point(1, 0)
+            };
+            brush.GradientStops.Add(new GradientStop(Blend(accent, Colors.White, 0.65), 0));
+            brush.GradientStops.Add(new GradientStop(Blend(accent, Colors.White, 0.3), 0.5));
+            brush.GradientStops.Add(new GradientStop(accent, 1));
+            brush.Freeze();
+            return brush;
+        }
+
+        private static Color Blend(Color a, Color b, double t)
+        {
+            return Color.FromRgb(
+                (byte)(a.R + (b.R - a.R) * t),
+                (byte)(a.G + (b.G - a.G) * t),
+                (byte)(a.B + (b.B - a.B) * t));
         }
 
         // Arah gradasi mengikuti sisi yang menempel ke layar.
@@ -1024,6 +1083,7 @@ namespace WindowsNotch
         {
             NotchAnchor.LeftCenter => (new Point(0, 0.5), new Point(1, 0.5)),
             NotchAnchor.RightCenter => (new Point(1, 0.5), new Point(0, 0.5)),
+            NotchAnchor.BottomCenter => (new Point(0, 1), new Point(0, 0)),
             _ => (new Point(0, 0), new Point(0, 1))
         };
 
@@ -1176,9 +1236,9 @@ namespace WindowsNotch
 
         // ===================== Posisi & Bentuk =====================
 
-        // Membentuk geometri pill. Mode atas: flare keluar di tepi atas.
-        // Mode sisi: sudut membulat di sisi dalam layar, sisi menempel layar tetap rata.
-        // Saat digeser: selalu berbentuk kapsul dengan radius penuh agar terlihat rapi.
+        // Membentuk dua lapis pill: selimut hitam dengan gelombang di dekat
+        // tepi layar, lalu capsule gradasi yang dibungkus di dalamnya.
+        // Saat digeser: keduanya memakai kapsul penuh agar netral dan rapi.
         private void UpdateNotchShape(Size size)
         {
             double w = size.Width;
@@ -1190,73 +1250,168 @@ namespace WindowsNotch
                 double radius = Math.Min(w, h) / 2;
                 var capsule = new RectangleGeometry(new Rect(0, 0, w, h), radius, radius);
                 capsule.Freeze();
+                NotchSleeve.Data = capsule;
                 NotchShape.Data = capsule;
                 return;
             }
+
+            if (_domeMode)
+            {
+                // Mode bukit: lengkungan hitam kecil, tanpa isi.
+                NotchSleeve.Data = CreateDomeGeometry(w, h);
+                NotchShape.Visibility = Visibility.Collapsed;
+                NotchAccent.Visibility = Visibility.Collapsed;
+                NotchSheen.Visibility = Visibility.Collapsed;
+                NotchOuterBorder.Visibility = Visibility.Collapsed;
+                NotchBorder.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            NotchShape.Visibility = Visibility.Visible;
+            NotchAccent.Visibility = Visibility.Visible;
+            NotchSheen.Visibility = Visibility.Visible;
+            NotchOuterBorder.Visibility = Visibility.Visible;
+            NotchBorder.Visibility = Visibility.Visible;
+            NotchSleeve.Data = CreateSleeveGeometry(w, h);
+            NotchShape.Data = CreateInnerCapsuleGeometry(w, h);
+        }
+
+        private Geometry CreateDomeGeometry(double w, double h)
+        {
+            // Kedalaman bukit dibuat kecil/tipis dan mengikuti sisi yang menempel.
+            double depth = Math.Min(16, Math.Min(w, h) * 0.45);
+            var geometry = new StreamGeometry();
+            using (StreamGeometryContext ctx = geometry.Open())
+            {
+                switch (_anchor)
+                {
+                    case NotchAnchor.BottomCenter:
+                        ctx.BeginFigure(new Point(0, h), isFilled: true, isClosed: true);
+                        ctx.LineTo(new Point(w, h), true, false);
+                        ctx.BezierTo(new Point(w * 0.66, h - depth),
+                                     new Point(w * 0.34, h - depth),
+                                     new Point(0, h), true, false);
+                        break;
+
+                    case NotchAnchor.LeftCenter:
+                        ctx.BeginFigure(new Point(0, 0), isFilled: true, isClosed: true);
+                        ctx.LineTo(new Point(0, h), true, false);
+                        ctx.BezierTo(new Point(depth, h * 0.66),
+                                     new Point(depth, h * 0.34),
+                                     new Point(0, 0), true, false);
+                        break;
+
+                    case NotchAnchor.RightCenter:
+                        ctx.BeginFigure(new Point(w, 0), isFilled: true, isClosed: true);
+                        ctx.LineTo(new Point(w, h), true, false);
+                        ctx.BezierTo(new Point(w - depth, h * 0.66),
+                                     new Point(w - depth, h * 0.34),
+                                     new Point(w, 0), true, false);
+                        break;
+
+                    default: // TopCenter
+                        ctx.BeginFigure(new Point(0, 0), isFilled: true, isClosed: true);
+                        ctx.LineTo(new Point(w, 0), true, false);
+                        ctx.BezierTo(new Point(w * 0.66, depth),
+                                     new Point(w * 0.34, depth),
+                                     new Point(0, 0), true, false);
+                        break;
+                }
+            }
+            geometry.Freeze();
+            return geometry;
+        }
+
+        private void UpdateDomeVisibility()
+        {
+            ContentRoot.Visibility = _domeMode ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        private Geometry CreateSleeveGeometry(double w, double h)
+        {
+            double shoulder = Math.Min(SleeveShoulderInset,
+                Math.Max(0, Math.Min(w, h) / 4));
+            double innerRadius = CreateInnerRadius(w, h);
+            double radius = Math.Min(Math.Min(w, h) / 2,
+                innerRadius + SleeveRim);
 
             var geometry = new StreamGeometry();
             using (StreamGeometryContext ctx = geometry.Open())
             {
                 if (IsSideAnchor)
                 {
-                    double r = Math.Min(SideCornerRadius, Math.Min(w, h) / 2);
-
-                    if (_anchor == NotchAnchor.LeftCenter)
-                    {
-                        // Menempel kiri: sudut kanan membulat
-                        ctx.BeginFigure(new Point(0, 0), isFilled: true, isClosed: true);
-                        ctx.LineTo(new Point(w - r, 0), true, false);
-                        ctx.ArcTo(new Point(w, r), new Size(r, r), 0, false,
-                                  SweepDirection.Clockwise, true, false);
-                        ctx.LineTo(new Point(w, h - r), true, false);
-                        ctx.ArcTo(new Point(w - r, h), new Size(r, r), 0, false,
-                                  SweepDirection.Clockwise, true, false);
-                        ctx.LineTo(new Point(0, h), true, false);
-                    }
-                    else
-                    {
-                        // Menempel kanan: sudut kiri membulat. Mulai dari ujung
-                        // lengkung, bukan (0,0), agar tidak ada garis penutup
-                        // yang menyeberangi sudut kiri.
-                        ctx.BeginFigure(new Point(r, 0), isFilled: true, isClosed: true);
-                        ctx.LineTo(new Point(w, 0), true, false);
-                        ctx.LineTo(new Point(w, h), true, false);
-                        ctx.LineTo(new Point(r, h), true, false);
-                        ctx.ArcTo(new Point(0, h - r), new Size(r, r), 0, false,
-                                  SweepDirection.Clockwise, true, false);
-                        ctx.LineTo(new Point(0, r), true, false);
-                        ctx.ArcTo(new Point(r, 0), new Size(r, r), 0, false,
-                                  SweepDirection.Clockwise, true, false);
-                    }
+                    // Tepi tempel di kiri; sudut atas/bawah melebar keluar.
+                    ctx.BeginFigure(new Point(0, 0), isFilled: true, isClosed: true);
+                    ctx.ArcTo(new Point(shoulder, shoulder), new Size(shoulder, shoulder),
+                              0, false, SweepDirection.Counterclockwise, true, false);
+                    ctx.LineTo(new Point(w - radius, shoulder), true, false);
+                    ctx.ArcTo(new Point(w, shoulder + radius), new Size(radius, radius),
+                              0, false, SweepDirection.Clockwise, true, false);
+                    ctx.LineTo(new Point(w, h - shoulder - radius), true, false);
+                    ctx.ArcTo(new Point(w - radius, h - shoulder), new Size(radius, radius),
+                              0, false, SweepDirection.Clockwise, true, false);
+                    ctx.LineTo(new Point(shoulder, h - shoulder), true, false);
+                    ctx.ArcTo(new Point(0, h), new Size(shoulder, shoulder),
+                              0, false, SweepDirection.Counterclockwise, true, false);
                 }
                 else
                 {
-                    double flare = 6;                    // radius flare atas (keluar)
-                    double bottomRadius = 18;            // radius bawah (masuk ke tengah)
-                    bottomRadius = Math.Min(bottomRadius, (w - 2 * flare) / 2);
-                    bottomRadius = Math.Min(bottomRadius, h / 2);
-
+                    // Tepi tempel di atas; sudut kiri/kanan melebar keluar.
                     ctx.BeginFigure(new Point(0, 0), isFilled: true, isClosed: true);
                     ctx.LineTo(new Point(w, 0), true, false);
-                    // Flare kanan: dari ujung atas kanan -> badan (tangen mulus di titik ujung)
-                    ctx.ArcTo(new Point(w - flare, flare), new Size(flare, flare), 0, false,
-                              SweepDirection.Counterclockwise, true, false);
-                    ctx.LineTo(new Point(w - flare, h - bottomRadius), true, false);
-                    // Sudut bawah kanan (masuk ke tengah)
-                    ctx.ArcTo(new Point(w - flare - bottomRadius, h), new Size(bottomRadius, bottomRadius), 0, false,
-                              SweepDirection.Clockwise, true, false);
-                    ctx.LineTo(new Point(flare + bottomRadius, h), true, false);
-                    // Sudut bawah kiri (masuk ke tengah)
-                    ctx.ArcTo(new Point(flare, h - bottomRadius), new Size(bottomRadius, bottomRadius), 0, false,
-                              SweepDirection.Clockwise, true, false);
-                    ctx.LineTo(new Point(flare, flare), true, false);
-                    // Flare kiri: dari badan -> ujung atas kiri (tangen mulus)
-                    ctx.ArcTo(new Point(0, 0), new Size(flare, flare), 0, false,
-                              SweepDirection.Counterclockwise, true, false);
+                    ctx.ArcTo(new Point(w - shoulder, shoulder), new Size(shoulder, shoulder),
+                              0, false, SweepDirection.Counterclockwise, true, false);
+                    ctx.LineTo(new Point(w - shoulder, h - radius), true, false);
+                    ctx.ArcTo(new Point(w - shoulder - radius, h), new Size(radius, radius),
+                              0, false, SweepDirection.Clockwise, true, false);
+                    ctx.LineTo(new Point(shoulder + radius, h), true, false);
+                    ctx.ArcTo(new Point(shoulder, h - radius), new Size(radius, radius),
+                              0, false, SweepDirection.Clockwise, true, false);
+                    ctx.LineTo(new Point(shoulder, shoulder), true, false);
+                    ctx.ArcTo(new Point(0, 0), new Size(shoulder, shoulder),
+                              0, false, SweepDirection.Counterclockwise, true, false);
                 }
             }
+
+            if (_anchor == NotchAnchor.BottomCenter)
+            {
+                geometry.Transform = new ScaleTransform(1, -1, 0, h / 2);
+            }
+            else if (_anchor == NotchAnchor.RightCenter)
+            {
+                geometry.Transform = new ScaleTransform(-1, 1, w / 2, 0);
+            }
+
             geometry.Freeze();
-            NotchShape.Data = geometry;
+            return geometry;
+        }
+
+        private double CreateInnerRadius(double w, double h)
+        {
+            (double insetX, double insetY) = IsSideAnchor
+                ? (SleeveRim, SleeveSpanInset)
+                : (SleeveSpanInset, SleeveRim);
+            double innerWidth = Math.Max(1, w - insetX * 2);
+            double innerHeight = Math.Max(1, h - insetY * 2);
+
+            return Math.Min(SleeveCornerRadius,
+                Math.Min(innerWidth, innerHeight) / 2);
+        }
+
+        private Geometry CreateInnerCapsuleGeometry(double w, double h)
+        {
+            (double insetX, double insetY) = IsSideAnchor
+                ? (SleeveRim, SleeveSpanInset)
+                : (SleeveSpanInset, SleeveRim);
+            double innerWidth = Math.Max(1, w - insetX * 2);
+            double innerHeight = Math.Max(1, h - insetY * 2);
+            double radius = Math.Min(SleeveCornerRadius,
+                Math.Min(innerWidth, innerHeight) / 2);
+
+            var capsule = new RectangleGeometry(
+                new Rect(insetX, insetY, innerWidth, innerHeight), radius, radius);
+            capsule.Freeze();
+            return capsule;
         }
 
         private void SetAnchor(NotchAnchor anchor)
@@ -1276,7 +1431,9 @@ namespace WindowsNotch
                 NotchAnchor.RightCenter => HorizontalAlignment.Right,
                 _ => HorizontalAlignment.Center
             };
-            PillHost.VerticalAlignment = VerticalAlignment.Top;
+            PillHost.VerticalAlignment = anchor == NotchAnchor.BottomCenter
+                ? VerticalAlignment.Bottom
+                : VerticalAlignment.Top;
 
             PillHost.Width = w;
             PillHost.Height = h;
@@ -1288,13 +1445,34 @@ namespace WindowsNotch
             UpdateSurface();
             UpdateVisualState();
             UpdateAccent();
+            UpdatePopupPlacement();
+        }
+
+        private void UpdatePopupPlacement()
+        {
+            bool bottom = _anchor == NotchAnchor.BottomCenter;
+            PlacementMode placement = bottom ? PlacementMode.Top : PlacementMode.Bottom;
+
+            StatusPopup.Placement = placement;
+            PairingPromptPopup.Placement = placement;
+
+            double statusOffset = _isExpanded
+                ? FeatureBarGap + FeatureBarHeight + 14
+                : 8;
+            StatusPopup.VerticalOffset = bottom ? -statusOffset : statusOffset;
+
+            double pairingOffset = _isExpanded
+                ? FeatureBarGap + FeatureBarHeight + 10
+                : 10;
+            PairingPromptPopup.VerticalOffset = bottom ? -pairingOffset : pairingOffset;
         }
 
         private void UpdateContentMargin()
         {
-            ContentRoot.Margin = IsSideAnchor && !_isExpanded
-                ? new Thickness(0)
-                : new Thickness(16, 0, 16, 0);
+            // Tepi capsule dalam menjorok ke dalam (SleeveSpanInset di sisi yang
+            // tidak menempel layar), jadi konten diberi margin agar tidak keluar.
+            double sideMargin = IsSideAnchor && !_isExpanded ? 0 : SleeveSpanInset + 2;
+            ContentRoot.Margin = new Thickness(sideMargin, 0, sideMargin, 0);
         }
 
         private void UpdateFeatureBarVisibility()
@@ -1311,21 +1489,31 @@ namespace WindowsNotch
 
         private void UpdateFeatureBarPosition(double pillWidth, double pillHeight)
         {
-            double topMargin = pillHeight + FeatureBarGap;
+            double gap = pillHeight + FeatureBarGap;
+            bool bottom = _anchor == NotchAnchor.BottomCenter;
+            FeatureMenuBar.VerticalAlignment = bottom
+                ? VerticalAlignment.Bottom
+                : VerticalAlignment.Top;
+
             if (_anchor == NotchAnchor.RightCenter)
             {
                 FeatureMenuBar.HorizontalAlignment = HorizontalAlignment.Right;
-                FeatureMenuBar.Margin = new Thickness(0, topMargin, 14, 0);
+                FeatureMenuBar.Margin = new Thickness(0, gap, 14, 0);
             }
             else if (_anchor == NotchAnchor.LeftCenter)
             {
                 FeatureMenuBar.HorizontalAlignment = HorizontalAlignment.Left;
-                FeatureMenuBar.Margin = new Thickness(14, topMargin, 0, 0);
+                FeatureMenuBar.Margin = new Thickness(14, gap, 0, 0);
+            }
+            else if (bottom)
+            {
+                FeatureMenuBar.HorizontalAlignment = HorizontalAlignment.Center;
+                FeatureMenuBar.Margin = new Thickness(0, 0, 0, gap);
             }
             else
             {
                 FeatureMenuBar.HorizontalAlignment = HorizontalAlignment.Center;
-                FeatureMenuBar.Margin = new Thickness(0, topMargin, 0, 0);
+                FeatureMenuBar.Margin = new Thickness(0, gap, 0, 0);
             }
         }
 
@@ -1356,6 +1544,10 @@ namespace WindowsNotch
                 case NotchAnchor.RightCenter:
                     Left = work.Right - windowWidth;
                     Top = work.Top + (work.Height - targetHeight) / 2;
+                    break;
+                case NotchAnchor.BottomCenter:
+                    Left = work.Left + (work.Width - windowWidth) / 2;
+                    Top = work.Bottom - windowHeight;
                     break;
                 default:
                     Left = work.Left + (work.Width - windowWidth) / 2;
@@ -1436,6 +1628,14 @@ namespace WindowsNotch
 
         // ===================== Drag & Drop =====================
 
+        // Anchor bawah menempel di tepi bawah window, jadi saat expanded ada
+        // ruang tambahan (bar fitur) di atas pill.
+        private double GetPillVerticalOffset()
+        {
+            if (_anchor != NotchAnchor.BottomCenter) return 0;
+            return Math.Max(0, ActualHeight - PillHost.ActualHeight);
+        }
+
         private void OnPillMouseDown(object sender, MouseButtonEventArgs e)
         {
             if (IsInteractiveElement(e.OriginalSource as DependencyObject)) return;
@@ -1449,7 +1649,9 @@ namespace WindowsNotch
             // Offset kursor terhadap tepi kiri pill (bukan window) agar notch tidak
             // melompat saat window menyusut ke ukuran drag tanpa ruang ikon.
             double pillOffsetX = Math.Max(0, (ActualWidth - PillHost.ActualWidth) / 2);
-            _dragGrab = new Point(cursor.X / scaleX - Left - pillOffsetX, cursor.Y / scaleY - Top);
+            _dragGrab = new Point(
+                cursor.X / scaleX - Left - pillOffsetX,
+                cursor.Y / scaleY - Top - GetPillVerticalOffset());
             _dragMoved = false;
             _isDragging = true;
             _collapseTimer.Stop();
@@ -1503,7 +1705,7 @@ namespace WindowsNotch
 
             var (cw, ch) = CollapsedSize;
             double grabX = cursor.X / scaleX - Left;
-            double grabY = cursor.Y / scaleY - Top;
+            double grabY = cursor.Y / scaleY - Top - GetPillVerticalOffset();
 
             PillHost.Width = cw;
             PillHost.Height = ch;
@@ -1531,7 +1733,34 @@ namespace WindowsNotch
 
             if (!_dragMoved)
             {
-                // Klik tanpa geser: kembalikan bentuk sesuai anchor
+                // Klik dua kali cepat: toggle mode bukit (dome hitam, tanpa isi)
+                var now = DateTime.Now;
+                bool isDouble = (now - _lastDomeClick).TotalMilliseconds <= 400;
+                _lastDomeClick = now;
+                if (isDouble)
+                {
+                    if (!_domeMode)
+                    {
+                        // Masuk mode bukit: sembunyikan isi, lalu mengecil halus ke dome.
+                        _domeMode = true;
+                        UpdateDomeVisibility();
+                        if (_isExpanded)
+                            CollapseNotch();
+                        else
+                            UpdateNotchShape(PillHost.RenderSize);
+                    }
+                    else
+                    {
+                        // Keluar mode bukit: tampilkan notch normal lagi.
+                        _domeMode = false;
+                        UpdateDomeVisibility();
+                        if (PillHost.IsMouseOver)
+                            ExpandNotch();
+                        else
+                            UpdateNotchShape(PillHost.RenderSize);
+                    }
+                    return;
+                }
                 UpdateNotchShape(PillHost.RenderSize);
                 return;
             }
@@ -1570,11 +1799,13 @@ namespace WindowsNotch
                     SystemParameters.PrimaryScreenHeight);
             }
 
-            // Hanya tiga anchor: tengah atas, kiri tengah, kanan tengah
+            // Empat anchor: tengah atas, tengah bawah, kiri tengah, kanan tengah
             var candidates = new (NotchAnchor Anchor, double Left, double Top, double Width, double Height)[]
             {
                 (NotchAnchor.TopCenter, work.Left + (work.Width - CollapsedWidth) / 2, work.Top,
                     CollapsedWidth, CollapsedHeight),
+                (NotchAnchor.BottomCenter, work.Left + (work.Width - CollapsedWidth) / 2,
+                    work.Bottom - CollapsedHeight, CollapsedWidth, CollapsedHeight),
                 (NotchAnchor.LeftCenter, work.Left, work.Top + (work.Height - SideCollapsedHeight) / 2,
                     SideCollapsedWidth, SideCollapsedHeight),
                 (NotchAnchor.RightCenter, work.Right - SideCollapsedWidth,
@@ -1822,7 +2053,7 @@ namespace WindowsNotch
             StatusPopupText.Foreground = isError
                 ? DangerBrush
                 : FrozenBrush(0xF5, 0xF5, 0xF7);
-            StatusPopup.VerticalOffset = _isExpanded ? (FeatureBarGap + FeatureBarHeight + 14) : 8;
+            UpdatePopupPlacement();
             StatusPopup.IsOpen = true;
             _statusTimer.Start();
         }
@@ -2011,6 +2242,7 @@ namespace WindowsNotch
 
             bool hasMedia = _media != null;
             bool sideCollapsed = IsSideAnchor && !_isExpanded;
+            bool bottomAnchor = _anchor == NotchAnchor.BottomCenter;
 
             SideCollapsedRoot.Visibility = hasMedia && sideCollapsed ? Visibility.Visible : Visibility.Collapsed;
             SideIdleRoot.Visibility = !hasMedia && sideCollapsed ? Visibility.Visible : Visibility.Collapsed;
@@ -2022,12 +2254,14 @@ namespace WindowsNotch
                 : Visibility.Collapsed;
 
             // Mode sisi yang mekar tetap horizontal, tapi konten ditengahkan vertikal
-            MediaRoot.VerticalAlignment = IsSideAnchor ? VerticalAlignment.Center : VerticalAlignment.Top;
-            MediaRoot.Margin = IsSideAnchor ? new Thickness(0) : new Thickness(0, 6.5, 0, 0);
-
-            VerticalAlignment pageAlignment = IsSideAnchor
+            MediaRoot.VerticalAlignment = IsSideAnchor
                 ? VerticalAlignment.Center
-                : VerticalAlignment.Stretch;
+                : bottomAnchor ? VerticalAlignment.Bottom : VerticalAlignment.Top;
+            MediaRoot.Margin = IsSideAnchor
+                ? new Thickness(0)
+                : bottomAnchor ? new Thickness(0, 0, 0, 7.5) : new Thickness(0, 7.5, 0, 0);
+
+            VerticalAlignment pageAlignment = VerticalAlignment.Center;
             CalendarPage.VerticalAlignment = pageAlignment;
             MediaPage.VerticalAlignment = pageAlignment;
             MetricsPage.VerticalAlignment = pageAlignment;
@@ -2036,10 +2270,10 @@ namespace WindowsNotch
             {
                 IdleCompactRoot.Visibility = _isExpanded ? Visibility.Collapsed : Visibility.Visible;
                 IdleExpandedRoot.Visibility = _isExpanded ? Visibility.Visible : Visibility.Collapsed;
-                IdleExpandedRoot.Margin = IsSideAnchor
-                    ? new Thickness(IdleExpandedHorizontalMargin, 0, IdleExpandedHorizontalMargin, 0)
-                    : new Thickness(IdleExpandedHorizontalMargin, IdleExpandedTopMargin,
-                        IdleExpandedHorizontalMargin, 0);
+                // Sejajarkan area konten dengan tinggi capsule dalam (inset sleeve).
+                double expandedInset = IsSideAnchor ? SleeveSpanInset : SleeveRim;
+                IdleExpandedRoot.Margin = new Thickness(IdleExpandedHorizontalMargin, expandedInset,
+                    IdleExpandedHorizontalMargin, expandedInset);
             }
 
             if (!sideCollapsed) return;
@@ -2062,12 +2296,9 @@ namespace WindowsNotch
             string time = now.ToString("HH:mm", CultureInfo.CurrentCulture);
 
             CompactClockText.Text = time;
+
             SideHourText.Text = now.ToString("HH", CultureInfo.CurrentCulture);
             SideMinuteText.Text = now.ToString("mm", CultureInfo.CurrentCulture);
-
-            CompactDateText.Text = now.ToString("ddd, d MMM", CultureInfo.CurrentCulture);
-            SideDayText.Text = now.ToString("ddd", CultureInfo.CurrentCulture);
-            SideDateText.Text = now.ToString("d MMM", CultureInfo.CurrentCulture);
 
             UpdateCalendar(now);
         }
@@ -2382,7 +2613,7 @@ namespace WindowsNotch
         // Saat kursor mouse masuk ke area Notch (Mekar)
         private void ExpandNotch()
         {
-            if (_isExpanded) return;
+            if (_isExpanded || _domeMode) return;
             _isExpanded = true;
             _animationVersion++;
 
@@ -2523,8 +2754,119 @@ namespace WindowsNotch
             }
         }
 
+        private void InitMobileServer()
+        {
+            _mobileServer = new MobileServerService(_smtc, _systemStatus);
+
+            _mobileServer.OnFileReceived += (path) =>
+            {
+                Dispatcher.BeginInvoke(() =>
+                {
+                    ShowDropShelf(new[] { path });
+                    ShowStatusPopup($"File diterima: {Path.GetFileName(path)}", isError: false);
+                });
+            };
+
+            _mobileServer.OnTextReceived += (text) =>
+            {
+                Dispatcher.BeginInvoke(() =>
+                {
+                    try
+                    {
+                        string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                        string downloadsFolder = Path.Combine(userProfile, "Downloads");
+                        Directory.CreateDirectory(downloadsFolder);
+                        string noteFile = Path.Combine(downloadsFolder, $"Notchi_Mobile_Note_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
+                        File.WriteAllText(noteFile, text);
+                        ShowDropShelf(new[] { noteFile });
+                        ShowStatusPopup("Catatan teks diterima dari HP", isError: false);
+                    }
+                    catch { }
+                });
+            };
+
+            PairingService.OnPairingRequested += OnPairingRequestedFromDevice;
+
+            DenyPairButton.Click += (s, e) =>
+            {
+                PairingPromptPopup.IsOpen = false;
+                if (_currentPairingRequest != null)
+                {
+                    _currentPairingRequest.ApprovalSource.TrySetResult(false);
+                    _currentPairingRequest = null;
+                }
+            };
+
+            AllowPairButton.Click += (s, e) =>
+            {
+                PairingPromptPopup.IsOpen = false;
+                if (_currentPairingRequest != null)
+                {
+                    _currentPairingRequest.ApprovalSource.TrySetResult(true);
+                    _currentPairingRequest = null;
+                }
+            };
+
+            ApplyMobileServerSettings();
+        }
+
+        private async void ApplyMobileServerSettings()
+        {
+            if (_mobileServer == null) return;
+
+            try
+            {
+                if (_settings.IsMobileServerEnabled)
+                {
+                    if (!_mobileServer.IsRunning)
+                    {
+                        await _mobileServer.StartAsync(_settings.MobileServerPort);
+                    }
+                }
+                else
+                {
+                    if (_mobileServer.IsRunning)
+                    {
+                        await _mobileServer.StopAsync();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                CrashLogger.Log("MobileServer.ApplySettings", ex);
+                ShowStatusPopup("Gagal memulai server Notchi Mobile", isError: true);
+            }
+        }
+
+        private Task OnPairingRequestedFromDevice(PairingRequest req)
+        {
+            var tcs = new System.Threading.Tasks.TaskCompletionSource();
+
+            Dispatcher.BeginInvoke(async () =>
+            {
+                try
+                {
+                    _currentPairingRequest = req;
+                    PairingPromptDeviceName.Text = $"Izinkan perangkat \"{req.DeviceName}\" terhubung?";
+                    UpdatePopupPlacement();
+                    PairingPromptPopup.IsOpen = true;
+
+                    await req.ApprovalSource.Task;
+                }
+                finally
+                {
+                    PairingPromptPopup.IsOpen = false;
+                    tcs.TrySetResult();
+                }
+            });
+
+            return tcs.Task;
+        }
+
         protected override void OnClosed(EventArgs e)
         {
+            PairingService.OnPairingRequested -= OnPairingRequestedFromDevice;
+            _mobileServer?.Dispose();
             _quickConversionCts?.Cancel();
             _statusTimer.Stop();
             StatusPopup.IsOpen = false;
