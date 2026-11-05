@@ -487,6 +487,12 @@ namespace WindowsNotch
 
             UpdateFeatureButtonStates();
 
+            // Jika sudah ditampilkan penuh, jangan memulai ulang animasi
+            // (mencegah animasi buka-tutup berkedip saat memanggil berulang)
+            if (FeatureMenuBar.Visibility == Visibility.Visible
+                && FeatureMenuBar.Width >= FeatureBarFullWidth)
+                return;
+
             FeatureMenuBar.Visibility = Visibility.Visible;
             FeatureMenuBar.IsHitTestVisible = true;
 
@@ -518,6 +524,9 @@ namespace WindowsNotch
 
         private void HideFeatureBar(bool immediate = false)
         {
+            // Jika sudah tersembunyi, jangan memulai ulang animasi
+            if (FeatureMenuBar.Visibility == Visibility.Collapsed) return;
+
             if (immediate)
             {
                 FeatureMenuBar.BeginAnimation(UIElement.OpacityProperty, null);
