@@ -22,9 +22,8 @@ namespace WindowsNotch
         private const double CollapsedWidth = 250;
         private const double CollapsedHeight = 40;
         private const double ExpandedWidth = 300;
-        private const double ExpandedHeight = 100;
+        private const double ExpandedHeight = 108;
         private const double IdleExpandedHorizontalMargin = 8;
-        private const double IdleExpandedTopMargin = 8;
         private const int IdleCalendarPage = 0;
         private const int IdleMediaPage = 1;
         private const int IdleMetricsPage = 2;
@@ -32,7 +31,7 @@ namespace WindowsNotch
         private const double SideCollapsedWidth = 40;
         private const double SideCollapsedHeight = 107;
         private const double SideExpandedWidth = 300;
-        private const double SideExpandedHeight = 107;
+        private const double SideExpandedHeight = 126;
         private const double SleeveRim = 6;
         private const double SleeveShoulderInset = 14;
         private const double SleeveSpanInset = SleeveShoulderInset + SleeveRim;
@@ -1400,9 +1399,10 @@ namespace WindowsNotch
 
         private void UpdateContentMargin()
         {
-            ContentRoot.Margin = IsSideAnchor && !_isExpanded
-                ? new Thickness(0)
-                : new Thickness(16, 0, 16, 0);
+            // Tepi capsule dalam menjorok ke dalam (SleeveSpanInset di sisi yang
+            // tidak menempel layar), jadi konten diberi margin agar tidak keluar.
+            double sideMargin = IsSideAnchor && !_isExpanded ? 0 : SleeveSpanInset + 2;
+            ContentRoot.Margin = new Thickness(sideMargin, 0, sideMargin, 0);
         }
 
         private void UpdateFeatureBarVisibility()
@@ -2162,11 +2162,9 @@ namespace WindowsNotch
                 : bottomAnchor ? VerticalAlignment.Bottom : VerticalAlignment.Top;
             MediaRoot.Margin = IsSideAnchor
                 ? new Thickness(0)
-                : bottomAnchor ? new Thickness(0, 0, 0, 6.5) : new Thickness(0, 6.5, 0, 0);
+                : bottomAnchor ? new Thickness(0, 0, 0, 7.5) : new Thickness(0, 7.5, 0, 0);
 
-            VerticalAlignment pageAlignment = IsSideAnchor || bottomAnchor
-                ? VerticalAlignment.Center
-                : VerticalAlignment.Stretch;
+            VerticalAlignment pageAlignment = VerticalAlignment.Center;
             CalendarPage.VerticalAlignment = pageAlignment;
             MediaPage.VerticalAlignment = pageAlignment;
             MetricsPage.VerticalAlignment = pageAlignment;
@@ -2175,10 +2173,10 @@ namespace WindowsNotch
             {
                 IdleCompactRoot.Visibility = _isExpanded ? Visibility.Collapsed : Visibility.Visible;
                 IdleExpandedRoot.Visibility = _isExpanded ? Visibility.Visible : Visibility.Collapsed;
-                IdleExpandedRoot.Margin = IsSideAnchor || bottomAnchor
-                    ? new Thickness(IdleExpandedHorizontalMargin, 0, IdleExpandedHorizontalMargin, 0)
-                    : new Thickness(IdleExpandedHorizontalMargin, IdleExpandedTopMargin,
-                        IdleExpandedHorizontalMargin, 0);
+                // Sejajarkan area konten dengan tinggi capsule dalam (inset sleeve).
+                double expandedInset = IsSideAnchor ? SleeveSpanInset : SleeveRim;
+                IdleExpandedRoot.Margin = new Thickness(IdleExpandedHorizontalMargin, expandedInset,
+                    IdleExpandedHorizontalMargin, expandedInset);
             }
 
             if (!sideCollapsed) return;
@@ -2201,12 +2199,9 @@ namespace WindowsNotch
             string time = now.ToString("HH:mm", CultureInfo.CurrentCulture);
 
             CompactClockText.Text = time;
+
             SideHourText.Text = now.ToString("HH", CultureInfo.CurrentCulture);
             SideMinuteText.Text = now.ToString("mm", CultureInfo.CurrentCulture);
-
-            CompactDateText.Text = now.ToString("ddd, d MMM", CultureInfo.CurrentCulture);
-            SideDayText.Text = now.ToString("ddd", CultureInfo.CurrentCulture);
-            SideDateText.Text = now.ToString("d MMM", CultureInfo.CurrentCulture);
 
             UpdateCalendar(now);
         }
