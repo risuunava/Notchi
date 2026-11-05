@@ -1021,6 +1021,41 @@ namespace WindowsNotch
                     : GetSourceColor(_media.SourceAppId) ?? IdleAccent;
 
             NotchAccent.Fill = CreateAccentBrush(accent);
+            UpdateProgressFill(_media);
+        }
+
+        // Progress bar mengikuti warna sumber media dengan gradasi terang -> warna.
+        private void UpdateProgressFill(MediaInfo? media)
+        {
+            Color? sourceColor = media == null ? null : GetSourceColor(media.SourceAppId);
+            Brush brush = sourceColor is Color color
+                ? CreateProgressBrush(color)
+                : (TryFindResource("MediaProgressBrush") as Brush ?? Brushes.White);
+
+            ProgressSlider.Foreground = brush;
+            LastMediaProgressSlider.Foreground = brush;
+        }
+
+        private static Brush CreateProgressBrush(Color accent)
+        {
+            var brush = new LinearGradientBrush
+            {
+                StartPoint = new Point(0, 0),
+                EndPoint = new Point(1, 0)
+            };
+            brush.GradientStops.Add(new GradientStop(Blend(accent, Colors.White, 0.65), 0));
+            brush.GradientStops.Add(new GradientStop(Blend(accent, Colors.White, 0.3), 0.5));
+            brush.GradientStops.Add(new GradientStop(accent, 1));
+            brush.Freeze();
+            return brush;
+        }
+
+        private static Color Blend(Color a, Color b, double t)
+        {
+            return Color.FromRgb(
+                (byte)(a.R + (b.R - a.R) * t),
+                (byte)(a.G + (b.G - a.G) * t),
+                (byte)(a.B + (b.B - a.B) * t));
         }
 
         // Arah gradasi mengikuti sisi yang menempel ke layar.

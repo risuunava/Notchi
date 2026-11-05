@@ -165,6 +165,7 @@
         <Style x:Key="SlimSlider" TargetType="Slider">
             <Setter Property="IsMoveToPointEnabled" Value="True"/>
             <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Foreground" Value="{StaticResource MediaProgressBrush}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Slider">
@@ -176,7 +177,7 @@
                                         <RepeatButton.Template>
                                             <ControlTemplate TargetType="RepeatButton">
                                                 <Border Height="4" CornerRadius="2"
-                                                        Background="{StaticResource MediaProgressBrush}"/>
+                                                        Background="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type Slider}}}"/>
                                             </ControlTemplate>
                                         </RepeatButton.Template>
                                     </RepeatButton>
