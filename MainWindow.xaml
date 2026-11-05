@@ -281,7 +281,9 @@
         <Grid x:Name="PillHost" Width="250" Height="40" ClipToBounds="True"
               HorizontalAlignment="Center" VerticalAlignment="Top" Cursor="Hand"
               AllowDrop="True">
-            <!-- Shape pill: tepi atas flare keluar, bawah radius normal -->
+            <!-- Selimut luar: menyatu ke tepi layar dengan lengkung gelombang -->
+            <Path x:Name="NotchSleeve" Fill="#FF030304"/>
+            <!-- Capsule dalam yang dibungkus selimut -->
             <Path x:Name="NotchShape" Fill="{StaticResource NotchBaseBrush}"/>
             <Path x:Name="NotchAccent" Data="{Binding Data, ElementName=NotchShape}"
                   Fill="Transparent" IsHitTestVisible="False"/>

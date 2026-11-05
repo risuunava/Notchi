@@ -33,7 +33,10 @@ namespace WindowsNotch
         private const double SideCollapsedHeight = 107;
         private const double SideExpandedWidth = 300;
         private const double SideExpandedHeight = 107;
-        private const double SideCornerRadius = 20;
+        private const double SleeveRim = 6;
+        private const double SleeveShoulderInset = 14;
+        private const double SleeveSpanInset = SleeveShoulderInset + SleeveRim;
+        private const double SleeveCornerRadius = 20;
         private const double FeatureBarHeight = 34;
         private const double FeatureBarGap = 4;
         private const double FeatureBarExtraHeight = FeatureBarGap + FeatureBarHeight + 10;
@@ -1188,9 +1191,9 @@ namespace WindowsNotch
 
         // ===================== Posisi & Bentuk =====================
 
-        // Membentuk geometri pill. Mode atas: flare keluar di tepi atas.
-        // Mode sisi: sudut membulat di sisi dalam layar, sisi menempel layar tetap rata.
-        // Saat digeser: selalu berbentuk kapsul dengan radius penuh agar terlihat rapi.
+        // Membentuk dua lapis pill: selimut hitam dengan gelombang di dekat
+        // tepi layar, lalu capsule gradasi yang dibungkus di dalamnya.
+        // Saat digeser: keduanya memakai kapsul penuh agar netral dan rapi.
         private void UpdateNotchShape(Size size)
         {
             double w = size.Width;
@@ -1202,73 +1205,100 @@ namespace WindowsNotch
                 double radius = Math.Min(w, h) / 2;
                 var capsule = new RectangleGeometry(new Rect(0, 0, w, h), radius, radius);
                 capsule.Freeze();
+                NotchSleeve.Data = capsule;
                 NotchShape.Data = capsule;
                 return;
             }
+
+            NotchSleeve.Data = CreateSleeveGeometry(w, h);
+            NotchShape.Data = CreateInnerCapsuleGeometry(w, h);
+        }
+
+        private Geometry CreateSleeveGeometry(double w, double h)
+        {
+            double shoulder = Math.Min(SleeveShoulderInset,
+                Math.Max(0, Math.Min(w, h) / 4));
+            double innerRadius = CreateInnerRadius(w, h);
+            double radius = Math.Min(Math.Min(w, h) / 2,
+                innerRadius + SleeveRim);
 
             var geometry = new StreamGeometry();
             using (StreamGeometryContext ctx = geometry.Open())
             {
                 if (IsSideAnchor)
                 {
-                    double r = Math.Min(SideCornerRadius, Math.Min(w, h) / 2);
-
-                    if (_anchor == NotchAnchor.LeftCenter)
-                    {
-                        // Menempel kiri: sudut kanan membulat
-                        ctx.BeginFigure(new Point(0, 0), isFilled: true, isClosed: true);
-                        ctx.LineTo(new Point(w - r, 0), true, false);
-                        ctx.ArcTo(new Point(w, r), new Size(r, r), 0, false,
-                                  SweepDirection.Clockwise, true, false);
-                        ctx.LineTo(new Point(w, h - r), true, false);
-                        ctx.ArcTo(new Point(w - r, h), new Size(r, r), 0, false,
-                                  SweepDirection.Clockwise, true, false);
-                        ctx.LineTo(new Point(0, h), true, false);
-                    }
-                    else
-                    {
-                        // Menempel kanan: sudut kiri membulat. Mulai dari ujung
-                        // lengkung, bukan (0,0), agar tidak ada garis penutup
-                        // yang menyeberangi sudut kiri.
-                        ctx.BeginFigure(new Point(r, 0), isFilled: true, isClosed: true);
-                        ctx.LineTo(new Point(w, 0), true, false);
-                        ctx.LineTo(new Point(w, h), true, false);
-                        ctx.LineTo(new Point(r, h), true, false);
-                        ctx.ArcTo(new Point(0, h - r), new Size(r, r), 0, false,
-                                  SweepDirection.Clockwise, true, false);
-                        ctx.LineTo(new Point(0, r), true, false);
-                        ctx.ArcTo(new Point(r, 0), new Size(r, r), 0, false,
-                                  SweepDirection.Clockwise, true, false);
-                    }
+                    // Tepi tempel di kiri; sudut atas/bawah melebar keluar.
+                    ctx.BeginFigure(new Point(0, 0), isFilled: true, isClosed: true);
+                    ctx.ArcTo(new Point(shoulder, shoulder), new Size(shoulder, shoulder),
+                              0, false, SweepDirection.Counterclockwise, true, false);
+                    ctx.LineTo(new Point(w - radius, shoulder), true, false);
+                    ctx.ArcTo(new Point(w, shoulder + radius), new Size(radius, radius),
+                              0, false, SweepDirection.Clockwise, true, false);
+                    ctx.LineTo(new Point(w, h - shoulder - radius), true, false);
+                    ctx.ArcTo(new Point(w - radius, h - shoulder), new Size(radius, radius),
+                              0, false, SweepDirection.Clockwise, true, false);
+                    ctx.LineTo(new Point(shoulder, h - shoulder), true, false);
+                    ctx.ArcTo(new Point(0, h), new Size(shoulder, shoulder),
+                              0, false, SweepDirection.Counterclockwise, true, false);
                 }
                 else
                 {
-                    double flare = 6;                    // radius flare atas (keluar)
-                    double bottomRadius = 18;            // radius bawah (masuk ke tengah)
-                    bottomRadius = Math.Min(bottomRadius, (w - 2 * flare) / 2);
-                    bottomRadius = Math.Min(bottomRadius, h / 2);
-
+                    // Tepi tempel di atas; sudut kiri/kanan melebar keluar.
                     ctx.BeginFigure(new Point(0, 0), isFilled: true, isClosed: true);
                     ctx.LineTo(new Point(w, 0), true, false);
-                    // Flare kanan: dari ujung atas kanan -> badan (tangen mulus di titik ujung)
-                    ctx.ArcTo(new Point(w - flare, flare), new Size(flare, flare), 0, false,
-                              SweepDirection.Counterclockwise, true, false);
-                    ctx.LineTo(new Point(w - flare, h - bottomRadius), true, false);
-                    // Sudut bawah kanan (masuk ke tengah)
-                    ctx.ArcTo(new Point(w - flare - bottomRadius, h), new Size(bottomRadius, bottomRadius), 0, false,
-                              SweepDirection.Clockwise, true, false);
-                    ctx.LineTo(new Point(flare + bottomRadius, h), true, false);
-                    // Sudut bawah kiri (masuk ke tengah)
-                    ctx.ArcTo(new Point(flare, h - bottomRadius), new Size(bottomRadius, bottomRadius), 0, false,
-                              SweepDirection.Clockwise, true, false);
-                    ctx.LineTo(new Point(flare, flare), true, false);
-                    // Flare kiri: dari badan -> ujung atas kiri (tangen mulus)
-                    ctx.ArcTo(new Point(0, 0), new Size(flare, flare), 0, false,
-                              SweepDirection.Counterclockwise, true, false);
+                    ctx.ArcTo(new Point(w - shoulder, shoulder), new Size(shoulder, shoulder),
+                              0, false, SweepDirection.Counterclockwise, true, false);
+                    ctx.LineTo(new Point(w - shoulder, h - radius), true, false);
+                    ctx.ArcTo(new Point(w - shoulder - radius, h), new Size(radius, radius),
+                              0, false, SweepDirection.Clockwise, true, false);
+                    ctx.LineTo(new Point(shoulder + radius, h), true, false);
+                    ctx.ArcTo(new Point(shoulder, h - radius), new Size(radius, radius),
+                              0, false, SweepDirection.Clockwise, true, false);
+                    ctx.LineTo(new Point(shoulder, shoulder), true, false);
+                    ctx.ArcTo(new Point(0, 0), new Size(shoulder, shoulder),
+                              0, false, SweepDirection.Counterclockwise, true, false);
                 }
             }
+
+            if (_anchor == NotchAnchor.BottomCenter)
+            {
+                geometry.Transform = new ScaleTransform(1, -1, 0, h / 2);
+            }
+            else if (_anchor == NotchAnchor.RightCenter)
+            {
+                geometry.Transform = new ScaleTransform(-1, 1, w / 2, 0);
+            }
+
             geometry.Freeze();
-            NotchShape.Data = geometry;
+            return geometry;
+        }
+
+        private double CreateInnerRadius(double w, double h)
+        {
+            (double insetX, double insetY) = IsSideAnchor
+                ? (SleeveRim, SleeveSpanInset)
+                : (SleeveSpanInset, SleeveRim);
+            double innerWidth = Math.Max(1, w - insetX * 2);
+            double innerHeight = Math.Max(1, h - insetY * 2);
+
+            return Math.Min(SleeveCornerRadius,
+                Math.Min(innerWidth, innerHeight) / 2);
+        }
+
+        private Geometry CreateInnerCapsuleGeometry(double w, double h)
+        {
+            (double insetX, double insetY) = IsSideAnchor
+                ? (SleeveRim, SleeveSpanInset)
+                : (SleeveSpanInset, SleeveRim);
+            double innerWidth = Math.Max(1, w - insetX * 2);
+            double innerHeight = Math.Max(1, h - insetY * 2);
+            double radius = Math.Min(SleeveCornerRadius,
+                Math.Min(innerWidth, innerHeight) / 2);
+
+            var capsule = new RectangleGeometry(
+                new Rect(insetX, insetY, innerWidth, innerHeight), radius, radius);
+            capsule.Freeze();
+            return capsule;
         }
 
         private void SetAnchor(NotchAnchor anchor)
