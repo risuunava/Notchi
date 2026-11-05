@@ -34,9 +34,6 @@
 
     <Border Background="#1C1C1E" BorderBrush="#2E2E30" BorderThickness="1"
             CornerRadius="14" Padding="16">
-        <Border.Effect>
-            <DropShadowEffect BlurRadius="20" ShadowDepth="4" Opacity="0.4" Color="Black"/>
-        </Border.Effect>
 
         <Grid>
             <Grid.RowDefinitions>

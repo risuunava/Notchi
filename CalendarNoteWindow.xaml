@@ -13,10 +13,6 @@
             BorderBrush="#2E2E30" BorderThickness="1"
             CornerRadius="12" Padding="12"
             HorizontalAlignment="Center" VerticalAlignment="Center">
-        <Border.Effect>
-            <DropShadowEffect BlurRadius="16" ShadowDepth="4"
-                              Opacity="0.4" Color="Black"/>
-        </Border.Effect>
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>

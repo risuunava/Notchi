@@ -40,10 +40,6 @@
 
     <Border x:Name="CardBorder" Background="#1C1C1E" BorderBrush="#2E2E30" BorderThickness="1"
             CornerRadius="12" Padding="12">
-        <Border.Effect>
-            <DropShadowEffect BlurRadius="16" ShadowDepth="4"
-                              Opacity="0.35" Color="Black"/>
-        </Border.Effect>
 
         <Grid>
             <Grid>

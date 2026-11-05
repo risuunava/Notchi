@@ -914,10 +914,6 @@
                     <GradientStop Color="#E6110E22" Offset="1"/>
                 </LinearGradientBrush>
             </Border.Background>
-            <Border.Effect>
-                <DropShadowEffect BlurRadius="12" ShadowDepth="2"
-                                  Opacity="0.45" Color="Black"/>
-            </Border.Effect>
             <StackPanel x:Name="FeatureMenuPanel" Orientation="Horizontal" VerticalAlignment="Center">
                 <Button x:Name="NotchiButton"
                         Style="{StaticResource FeatureMenuIconButton}"
@@ -1022,10 +1018,6 @@
                     BorderBrush="#3D7EFF" BorderThickness="1"
                     CornerRadius="8" Padding="10,6"
                     IsHitTestVisible="False">
-                <Border.Effect>
-                    <DropShadowEffect BlurRadius="12" ShadowDepth="3"
-                                      Opacity="0.35" Color="Black"/>
-                </Border.Effect>
                 <TextBlock x:Name="StatusPopupText" Foreground="#F5F5F7"
                            FontSize="10" FontWeight="SemiBold"
                            MaxWidth="320" TextWrapping="Wrap"/>
@@ -1043,9 +1035,6 @@
                Focusable="False">
             <Border Background="#1C1C1E" BorderBrush="#3D7EFF" BorderThickness="1.5"
                     CornerRadius="10" Padding="12,10" MinWidth="260">
-                <Border.Effect>
-                    <DropShadowEffect BlurRadius="16" ShadowDepth="4" Opacity="0.45" Color="Black"/>
-                </Border.Effect>
                 <StackPanel>
                     <TextBlock x:Name="PairingPromptDeviceName"
                                Text="Izinkan perangkat menghubung?"
