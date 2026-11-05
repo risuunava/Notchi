@@ -162,6 +162,7 @@ namespace WindowsNotch
         private enum NotchAnchor
         {
             TopCenter,
+            BottomCenter,
             LeftCenter,
             RightCenter
         }
@@ -780,6 +781,11 @@ namespace WindowsNotch
                     left = Left - window.Width - gap;
                     top = Top;
                 }
+                else if (_anchor == NotchAnchor.BottomCenter)
+                {
+                    left = Left + (Width - window.Width) / 2;
+                    top = Top - window.Height - gap;
+                }
                 else
                 {
                     double notchBottom = Top + (_isExpanded ? ExpandedHeight + FeatureBarExtraHeight : CollapsedHeight);
@@ -1029,6 +1035,7 @@ namespace WindowsNotch
         {
             NotchAnchor.LeftCenter => (new Point(0, 0.5), new Point(1, 0.5)),
             NotchAnchor.RightCenter => (new Point(1, 0.5), new Point(0, 0.5)),
+            NotchAnchor.BottomCenter => (new Point(0, 1), new Point(0, 0)),
             _ => (new Point(0, 0), new Point(0, 1))
         };
 
@@ -1281,7 +1288,9 @@ namespace WindowsNotch
                 NotchAnchor.RightCenter => HorizontalAlignment.Right,
                 _ => HorizontalAlignment.Center
             };
-            PillHost.VerticalAlignment = VerticalAlignment.Top;
+            PillHost.VerticalAlignment = anchor == NotchAnchor.BottomCenter
+                ? VerticalAlignment.Bottom
+                : VerticalAlignment.Top;
 
             PillHost.Width = w;
             PillHost.Height = h;
@@ -1293,6 +1302,26 @@ namespace WindowsNotch
             UpdateSurface();
             UpdateVisualState();
             UpdateAccent();
+            UpdatePopupPlacement();
+        }
+
+        private void UpdatePopupPlacement()
+        {
+            bool bottom = _anchor == NotchAnchor.BottomCenter;
+            PlacementMode placement = bottom ? PlacementMode.Top : PlacementMode.Bottom;
+
+            StatusPopup.Placement = placement;
+            PairingPromptPopup.Placement = placement;
+
+            double statusOffset = _isExpanded
+                ? FeatureBarGap + FeatureBarHeight + 14
+                : 8;
+            StatusPopup.VerticalOffset = bottom ? -statusOffset : statusOffset;
+
+            double pairingOffset = _isExpanded
+                ? FeatureBarGap + FeatureBarHeight + 10
+                : 10;
+            PairingPromptPopup.VerticalOffset = bottom ? -pairingOffset : pairingOffset;
         }
 
         private void UpdateContentMargin()
@@ -1316,21 +1345,31 @@ namespace WindowsNotch
 
         private void UpdateFeatureBarPosition(double pillWidth, double pillHeight)
         {
-            double topMargin = pillHeight + FeatureBarGap;
+            double gap = pillHeight + FeatureBarGap;
+            bool bottom = _anchor == NotchAnchor.BottomCenter;
+            FeatureMenuBar.VerticalAlignment = bottom
+                ? VerticalAlignment.Bottom
+                : VerticalAlignment.Top;
+
             if (_anchor == NotchAnchor.RightCenter)
             {
                 FeatureMenuBar.HorizontalAlignment = HorizontalAlignment.Right;
-                FeatureMenuBar.Margin = new Thickness(0, topMargin, 14, 0);
+                FeatureMenuBar.Margin = new Thickness(0, gap, 14, 0);
             }
             else if (_anchor == NotchAnchor.LeftCenter)
             {
                 FeatureMenuBar.HorizontalAlignment = HorizontalAlignment.Left;
-                FeatureMenuBar.Margin = new Thickness(14, topMargin, 0, 0);
+                FeatureMenuBar.Margin = new Thickness(14, gap, 0, 0);
+            }
+            else if (bottom)
+            {
+                FeatureMenuBar.HorizontalAlignment = HorizontalAlignment.Center;
+                FeatureMenuBar.Margin = new Thickness(0, 0, 0, gap);
             }
             else
             {
                 FeatureMenuBar.HorizontalAlignment = HorizontalAlignment.Center;
-                FeatureMenuBar.Margin = new Thickness(0, topMargin, 0, 0);
+                FeatureMenuBar.Margin = new Thickness(0, gap, 0, 0);
             }
         }
 
@@ -1361,6 +1400,10 @@ namespace WindowsNotch
                 case NotchAnchor.RightCenter:
                     Left = work.Right - windowWidth;
                     Top = work.Top + (work.Height - targetHeight) / 2;
+                    break;
+                case NotchAnchor.BottomCenter:
+                    Left = work.Left + (work.Width - windowWidth) / 2;
+                    Top = work.Bottom - windowHeight;
                     break;
                 default:
                     Left = work.Left + (work.Width - windowWidth) / 2;
@@ -1441,6 +1484,14 @@ namespace WindowsNotch
 
         // ===================== Drag & Drop =====================
 
+        // Anchor bawah menempel di tepi bawah window, jadi saat expanded ada
+        // ruang tambahan (bar fitur) di atas pill.
+        private double GetPillVerticalOffset()
+        {
+            if (_anchor != NotchAnchor.BottomCenter) return 0;
+            return Math.Max(0, ActualHeight - PillHost.ActualHeight);
+        }
+
         private void OnPillMouseDown(object sender, MouseButtonEventArgs e)
         {
             if (IsInteractiveElement(e.OriginalSource as DependencyObject)) return;
@@ -1454,7 +1505,9 @@ namespace WindowsNotch
             // Offset kursor terhadap tepi kiri pill (bukan window) agar notch tidak
             // melompat saat window menyusut ke ukuran drag tanpa ruang ikon.
             double pillOffsetX = Math.Max(0, (ActualWidth - PillHost.ActualWidth) / 2);
-            _dragGrab = new Point(cursor.X / scaleX - Left - pillOffsetX, cursor.Y / scaleY - Top);
+            _dragGrab = new Point(
+                cursor.X / scaleX - Left - pillOffsetX,
+                cursor.Y / scaleY - Top - GetPillVerticalOffset());
             _dragMoved = false;
             _isDragging = true;
             _collapseTimer.Stop();
@@ -1508,7 +1561,7 @@ namespace WindowsNotch
 
             var (cw, ch) = CollapsedSize;
             double grabX = cursor.X / scaleX - Left;
-            double grabY = cursor.Y / scaleY - Top;
+            double grabY = cursor.Y / scaleY - Top - GetPillVerticalOffset();
 
             PillHost.Width = cw;
             PillHost.Height = ch;
@@ -1575,11 +1628,13 @@ namespace WindowsNotch
                     SystemParameters.PrimaryScreenHeight);
             }
 
-            // Hanya tiga anchor: tengah atas, kiri tengah, kanan tengah
+            // Empat anchor: tengah atas, tengah bawah, kiri tengah, kanan tengah
             var candidates = new (NotchAnchor Anchor, double Left, double Top, double Width, double Height)[]
             {
                 (NotchAnchor.TopCenter, work.Left + (work.Width - CollapsedWidth) / 2, work.Top,
                     CollapsedWidth, CollapsedHeight),
+                (NotchAnchor.BottomCenter, work.Left + (work.Width - CollapsedWidth) / 2,
+                    work.Bottom - CollapsedHeight, CollapsedWidth, CollapsedHeight),
                 (NotchAnchor.LeftCenter, work.Left, work.Top + (work.Height - SideCollapsedHeight) / 2,
                     SideCollapsedWidth, SideCollapsedHeight),
                 (NotchAnchor.RightCenter, work.Right - SideCollapsedWidth,
@@ -1827,7 +1882,7 @@ namespace WindowsNotch
             StatusPopupText.Foreground = isError
                 ? DangerBrush
                 : FrozenBrush(0xF5, 0xF5, 0xF7);
-            StatusPopup.VerticalOffset = _isExpanded ? (FeatureBarGap + FeatureBarHeight + 14) : 8;
+            UpdatePopupPlacement();
             StatusPopup.IsOpen = true;
             _statusTimer.Start();
         }
@@ -2016,6 +2071,7 @@ namespace WindowsNotch
 
             bool hasMedia = _media != null;
             bool sideCollapsed = IsSideAnchor && !_isExpanded;
+            bool bottomAnchor = _anchor == NotchAnchor.BottomCenter;
 
             SideCollapsedRoot.Visibility = hasMedia && sideCollapsed ? Visibility.Visible : Visibility.Collapsed;
             SideIdleRoot.Visibility = !hasMedia && sideCollapsed ? Visibility.Visible : Visibility.Collapsed;
@@ -2027,10 +2083,14 @@ namespace WindowsNotch
                 : Visibility.Collapsed;
 
             // Mode sisi yang mekar tetap horizontal, tapi konten ditengahkan vertikal
-            MediaRoot.VerticalAlignment = IsSideAnchor ? VerticalAlignment.Center : VerticalAlignment.Top;
-            MediaRoot.Margin = IsSideAnchor ? new Thickness(0) : new Thickness(0, 6.5, 0, 0);
+            MediaRoot.VerticalAlignment = IsSideAnchor
+                ? VerticalAlignment.Center
+                : bottomAnchor ? VerticalAlignment.Bottom : VerticalAlignment.Top;
+            MediaRoot.Margin = IsSideAnchor
+                ? new Thickness(0)
+                : bottomAnchor ? new Thickness(0, 0, 0, 6.5) : new Thickness(0, 6.5, 0, 0);
 
-            VerticalAlignment pageAlignment = IsSideAnchor
+            VerticalAlignment pageAlignment = IsSideAnchor || bottomAnchor
                 ? VerticalAlignment.Center
                 : VerticalAlignment.Stretch;
             CalendarPage.VerticalAlignment = pageAlignment;
@@ -2041,7 +2101,7 @@ namespace WindowsNotch
             {
                 IdleCompactRoot.Visibility = _isExpanded ? Visibility.Collapsed : Visibility.Visible;
                 IdleExpandedRoot.Visibility = _isExpanded ? Visibility.Visible : Visibility.Collapsed;
-                IdleExpandedRoot.Margin = IsSideAnchor
+                IdleExpandedRoot.Margin = IsSideAnchor || bottomAnchor
                     ? new Thickness(IdleExpandedHorizontalMargin, 0, IdleExpandedHorizontalMargin, 0)
                     : new Thickness(IdleExpandedHorizontalMargin, IdleExpandedTopMargin,
                         IdleExpandedHorizontalMargin, 0);
@@ -2622,6 +2682,7 @@ namespace WindowsNotch
                 {
                     _currentPairingRequest = req;
                     PairingPromptDeviceName.Text = $"Izinkan perangkat \"{req.DeviceName}\" terhubung?";
+                    UpdatePopupPlacement();
                     PairingPromptPopup.IsOpen = true;
 
                     await req.ApprovalSource.Task;
