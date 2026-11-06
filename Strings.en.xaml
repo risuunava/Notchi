@@ -15,6 +15,11 @@
 
     <sys:String x:Key="Metrics">METRICS</sys:String>
     <sys:String x:Key="NoRecentMedia">No recent media</sys:String>
+    <sys:String x:Key="VolumeMute">Mute</sys:String>
+    <sys:String x:Key="VolumeUnmute">Unmute</sys:String>
+    <sys:String x:Key="VolumeSection">VOLUME</sys:String>
+    <sys:String x:Key="VolumeTitle">System volume</sys:String>
+    <sys:String x:Key="VolumeDescription">Adjust speaker volume</sys:String>
     <sys:String x:Key="Battery">Battery</sys:String>
     <sys:String x:Key="System">SYSTEM</sys:String>
 

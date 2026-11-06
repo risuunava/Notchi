@@ -19,6 +19,9 @@ namespace WindowsNotch
         private bool _isClosing;
         private bool _initializing = true;
         private bool _isRecordingHotkey;
+        private bool _isUpdatingVolume;
+        private readonly AudioVolumeService _volume = new();
+        private readonly DispatcherTimer _volumeTimer;
 
         public SettingsWindow(AppSettings settings)
         {
@@ -53,6 +56,14 @@ namespace WindowsNotch
             GeneralTabRadio.Checked += (s, e) => SwitchTab(isMobile: false);
             MobileTabRadio.Checked += (s, e) => SwitchTab(isMobile: true);
 
+            // Volume sistem
+            _volumeTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+            _volumeTimer.Tick += OnVolumeTimerTick;
+            UpdateVolumeUi(_volume.Volume, _volume.IsMuted);
+            VolumeSlider.ValueChanged += OnVolumeSliderChanged;
+            MuteToggle.Click += OnMuteToggleClick;
+            _volumeTimer.Start();
+
             CloseButton.Click += (s, e) => CloseFromUser();
 
             var headerDrag = new WindowDragHelper(this, HeaderRow);
@@ -79,6 +90,9 @@ namespace WindowsNotch
             {
                 _isClosing = true;
                 _isReady = false;
+                _volumeTimer.Stop();
+                _volumeTimer.Tick -= OnVolumeTimerTick;
+                _volume.Dispose();
             };
 
             PreviewKeyDown += OnPreviewKeyDown;
@@ -94,6 +108,61 @@ namespace WindowsNotch
             if (GeneralTabContent == null || MobileTabContent == null) return;
             GeneralTabContent.Visibility = isMobile ? Visibility.Collapsed : Visibility.Visible;
             MobileTabContent.Visibility = isMobile ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        // ===================== Volume sistem =====================
+
+        private void OnVolumeSliderChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (_isUpdatingVolume) return;
+            int percent = (int)Math.Round(VolumeSlider.Value);
+            VolumeValueText.Text = $"{percent}%";
+            _volume.Volume = (float)(VolumeSlider.Value / 100.0);
+
+            // Menggeser slider otomatis mengaktifkan suara (unmute).
+            if (_volume.IsMuted)
+            {
+                _volume.IsMuted = false;
+                MuteToggle.IsChecked = true;
+                UpdateMuteTooltip();
+            }
+        }
+
+        private void OnMuteToggleClick(object sender, RoutedEventArgs e)
+        {
+            _volume.IsMuted = MuteToggle.IsChecked != true;
+            UpdateMuteTooltip();
+        }
+
+        private void OnVolumeTimerTick(object? sender, EventArgs e)
+        {
+            if (_isUpdatingVolume) return;
+            if (VolumeSlider.IsMouseCaptureWithin) return;
+            UpdateVolumeUi(_volume.Volume, _volume.IsMuted);
+        }
+
+        private void UpdateVolumeUi(float volume, bool muted)
+        {
+            if (_isUpdatingVolume) return;
+            _isUpdatingVolume = true;
+            try
+            {
+                VolumeSlider.Value = volume * 100.0;
+                VolumeValueText.Text = $"{(int)Math.Round(volume * 100.0)}%";
+                MuteToggle.IsChecked = !muted;
+                UpdateMuteTooltip();
+            }
+            finally
+            {
+                _isUpdatingVolume = false;
+            }
+        }
+
+        private void UpdateMuteTooltip()
+        {
+            MuteToggle.ToolTip = MuteToggle.IsChecked == true
+                ? Localization.Get("VolumeMute")
+                : Localization.Get("VolumeUnmute");
         }
 
         public event EventHandler? SettingsChanged;

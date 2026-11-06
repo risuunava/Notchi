@@ -15,6 +15,11 @@
 
     <sys:String x:Key="Metrics">METRIK</sys:String>
     <sys:String x:Key="NoRecentMedia">Belum ada media terakhir</sys:String>
+    <sys:String x:Key="VolumeMute">Matikan suara</sys:String>
+    <sys:String x:Key="VolumeUnmute">Nyalakan suara</sys:String>
+    <sys:String x:Key="VolumeSection">VOLUME</sys:String>
+    <sys:String x:Key="VolumeTitle">Volume sistem</sys:String>
+    <sys:String x:Key="VolumeDescription">Atur volume speaker</sys:String>
     <sys:String x:Key="Battery">Baterai</sys:String>
     <sys:String x:Key="System">SISTEM</sys:String>
 
