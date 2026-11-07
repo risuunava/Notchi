@@ -12,6 +12,7 @@ namespace WindowsNotch
     {
         public string Title { get; init; } = string.Empty;
         public string Artist { get; init; } = string.Empty;
+        public string Album { get; init; } = string.Empty;
         public BitmapImage? AlbumArt { get; init; }
         public byte[]? AlbumArtBytes { get; init; }
         public string SourceAppId { get; init; } = string.Empty;
@@ -226,6 +227,7 @@ namespace WindowsNotch
                 {
                     Title = title,
                     Artist = artist,
+                    Album = properties.AlbumTitle ?? string.Empty,
                     AlbumArt = _cachedArt,
                     AlbumArtBytes = _cachedArtBytes,
                     SourceAppId = sourceAppId,
