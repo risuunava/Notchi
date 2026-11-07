@@ -139,6 +139,9 @@ namespace WindowsNotch
         private NoteWindow? _noteWindow;
         private SettingsWindow? _settingsWindow;
         private DropShelfWindow? _dropShelf;
+        private MediaFocusWindow? _focusWindow;
+        private bool _focusHidNotch;
+        private bool _isMainClosing;
         private readonly QuickConversionService _quickConversion = new();
         private readonly List<string> _droppedPaths = new();
         private readonly GlobalHotkeyService _hotkey = new();
@@ -300,6 +303,7 @@ namespace WindowsNotch
             };
             FileButton.Click += OnFileButtonClick;
             NoteButton.Click += OnNoteButtonClick;
+            FocusButton.Click += OnFocusButtonClick;
             SettingsButton.Click += OnSettingsButtonClick;
             ExitButton.Click += (s, e) => Application.Current.Shutdown();
 
@@ -358,7 +362,10 @@ namespace WindowsNotch
 
                 _hotkey.Initialize(this);
                 _hotkey.HotkeyPressed += (_, _) => ToggleNotchiVisibility();
+                _hotkey.FocusHotkeyPressed += (_, _) => ToggleMediaFocus();
                 _hotkey.Register(_settings.HotkeyModifiers, _settings.HotkeyKey);
+                _hotkey.RegisterFocus(
+                    _settings.FocusHotkeyModifiers, _settings.FocusHotkeyKey);
             };
 
             _statusTimer.Tick += (s, e) =>
@@ -480,7 +487,7 @@ namespace WindowsNotch
         }
 
         private const double FeatureBarCollapsedWidth = 34.0;
-        private const double FeatureBarFullWidth = 162.0;
+        private const double FeatureBarFullWidth = 194.0;
 
         private void ShowFeatureBar()
         {
@@ -586,6 +593,10 @@ namespace WindowsNotch
             NoteIconBorder.Background = isNoteActive ? ActiveFeatureBgBrush : Brushes.Transparent;
             NoteIconPath.Stroke = isNoteActive ? ActiveFeatureDarkBrush : InactiveFeatureLightBrush;
 
+            bool isFocusActive = _focusWindow is { IsVisible: true };
+            FocusIconBorder.Background = isFocusActive ? ActiveFeatureBgBrush : Brushes.Transparent;
+            FocusIconPath.Stroke = isFocusActive ? ActiveFeatureDarkBrush : InactiveFeatureLightBrush;
+
             bool isSettingsActive = _settingsWindow is { IsVisible: true };
             SettingsIconBorder.Background = isSettingsActive ? ActiveFeatureBgBrush : Brushes.Transparent;
             SettingsIconPath.Fill = isSettingsActive ? ActiveFeatureDarkBrush : InactiveFeatureLightBrush;
@@ -611,6 +622,134 @@ namespace WindowsNotch
             }
 
             ShowNoteWindow();
+        }
+
+        private void OnFocusButtonClick(object sender, RoutedEventArgs e)
+        {
+            if (_focusWindow is { IsVisible: true })
+            {
+                CloseMediaFocus();
+                return;
+            }
+
+            OpenMediaFocus();
+        }
+
+        private void ToggleMediaFocus()
+        {
+            if (_focusWindow is { IsVisible: true })
+            {
+                CloseMediaFocus();
+                return;
+            }
+
+            OpenMediaFocus();
+        }
+
+        private void OpenMediaFocus()
+        {
+            if (_focusWindow is { IsVisible: true }) return;
+
+            var window = new MediaFocusWindow(_smtc, _settings);
+            PositionFocusWindow(window);
+
+            window.PositionSaved += (_, _) =>
+            {
+                _settings.FocusLeft = window.Left;
+                _settings.FocusTop = window.Top;
+                SettingsStore.Save(_settings);
+            };
+
+            window.Closed += (_, _) =>
+            {
+                if (ReferenceEquals(_focusWindow, window))
+                {
+                    _focusWindow = null;
+                }
+
+                RestoreNotchAfterFocus();
+
+                if (!_isMainClosing)
+                {
+                    UpdateFeatureButtonStates();
+                }
+            };
+
+            _focusWindow = window;
+
+            if (_settings.HideNotchInFocus)
+            {
+                _focusHidNotch = Visibility == Visibility.Visible && !_isHidden;
+
+                if (_focusHidNotch)
+                {
+                    BeginAnimation(OpacityProperty, null);
+                    Opacity = 1;
+                    Visibility = Visibility.Hidden;
+                }
+            }
+
+            UpdateFeatureButtonStates();
+            window.Show();
+        }
+
+        private void CloseMediaFocus()
+        {
+            _focusWindow?.CloseAnimated();
+        }
+
+        private void RestoreNotchAfterFocus()
+        {
+            if (_isMainClosing ||
+                Dispatcher.HasShutdownStarted ||
+                Dispatcher.HasShutdownFinished)
+            {
+                return;
+            }
+
+            if (!_focusHidNotch) return;
+
+            _focusHidNotch = false;
+            if (_isHidden) return;
+
+            Visibility = Visibility.Visible;
+            Opacity = 0;
+
+            var fadeIn = new DoubleAnimation(0, 1,
+                new Duration(TimeSpan.FromMilliseconds(180)))
+            {
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            };
+
+            BeginAnimation(OpacityProperty, fadeIn);
+        }
+
+        private void PositionFocusWindow(MediaFocusWindow window)
+        {
+            var work = _monitor;
+            if (work.Width < 1 || work.Height < 1)
+            {
+                work = SystemParameters.WorkArea;
+            }
+
+            const double margin = 8;
+
+            double left = _settings.FocusLeft ??
+                work.Left + (work.Width - window.Width) / 2;
+
+            double top = _settings.FocusTop ??
+                work.Top + (work.Height - window.Height) / 2;
+
+            left = Math.Clamp(left,
+                work.Left + margin,
+                Math.Max(work.Left + margin, work.Right - window.Width - margin));
+
+            top = Math.Clamp(top,
+                work.Top + margin,
+                Math.Max(work.Top + margin, work.Bottom - window.Height - margin));
+
+            window.Left = left;
+            window.Top = top;
         }
 
         private void OnSettingsButtonClick(object sender, RoutedEventArgs e)
@@ -724,6 +863,9 @@ namespace WindowsNotch
             settings.SettingsChanged += (s, e) =>
             {
                 _hotkey.Register(_settings.HotkeyModifiers, _settings.HotkeyKey);
+                _hotkey.RegisterFocus(
+                    _settings.FocusHotkeyModifiers, _settings.FocusHotkeyKey);
+                _focusWindow?.RefreshSettings();
                 ApplyMobileServerSettings();
             };
 
@@ -890,6 +1032,7 @@ namespace WindowsNotch
             {
                 Title = source.Title,
                 Artist = source.Artist,
+                Album = source.Album,
                 AlbumArt = source.AlbumArt,
                 SourceAppId = source.SourceAppId,
                 IsPlaying = false,
@@ -2865,11 +3008,14 @@ namespace WindowsNotch
 
         protected override void OnClosed(EventArgs e)
         {
+            _isMainClosing = true;
             PairingService.OnPairingRequested -= OnPairingRequestedFromDevice;
             _mobileServer?.Dispose();
             _quickConversionCts?.Cancel();
             _statusTimer.Stop();
             StatusPopup.IsOpen = false;
+            _focusWindow?.Close();
+            _focusWindow = null;
             _hotkey.Dispose();
             Localization.LanguageChanged -= OnLanguageChanged;
             _mediaTimer.Stop();

@@ -300,6 +300,41 @@
                             </Grid>
                         </Border>
 
+                        <!-- Group: Volume -->
+                        <TextBlock Text="{DynamicResource VolumeSection}" Foreground="#6E6E73"
+                                   FontSize="8.5" FontWeight="Bold" Margin="4,0,0,4"/>
+                        <Border Background="#202024" CornerRadius="9" Padding="12,10" Margin="0,0,0,12">
+                            <StackPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="{DynamicResource VolumeTitle}"
+                                                   Foreground="#F5F5F7" FontSize="11" FontWeight="Medium"/>
+                                        <TextBlock Text="{DynamicResource VolumeDescription}"
+                                                   Foreground="#8E8E93" FontSize="8.5" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <CheckBox x:Name="MuteToggle" Grid.Column="1"
+                                              Style="{StaticResource SettingsToggle}"
+                                              VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                </Grid>
+                                <Grid Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Slider x:Name="VolumeSlider" Minimum="0" Maximum="100" Value="50"
+                                            VerticalAlignment="Center" IsMoveToPointEnabled="True"/>
+                                    <TextBlock x:Name="VolumeValueText" Grid.Column="1" Text="50%"
+                                               Foreground="#8E8E93" FontSize="9"
+                                               VerticalAlignment="Center" Margin="8,0,0,0" MinWidth="30"
+                                               TextAlignment="Right"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
                         <!-- Group 2: Bahasa -->
                         <TextBlock Text="{DynamicResource LanguageSection}" Foreground="#6E6E73"
                                    FontSize="8.5" FontWeight="Bold" Margin="4,0,0,4"/>
@@ -355,6 +390,72 @@
                                                FontFamily="Consolas"/>
                                 </Border>
                             </Grid>
+                        </Border>
+
+                        <!-- Group 4: Fokus Media -->
+                        <TextBlock Text="{DynamicResource FocusSection}" Foreground="#6E6E73"
+                                   FontSize="8.5" FontWeight="Bold" Margin="4,4,0,4"/>
+                        <Border Background="#202024" CornerRadius="9" Padding="12,10" Margin="0,0,0,10">
+                            <StackPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="{DynamicResource FocusHotkeyTitle}"
+                                                   Foreground="#F5F5F7" FontSize="11" FontWeight="Medium"/>
+                                        <TextBlock Text="{DynamicResource FocusHotkeyDescription}"
+                                                   Foreground="#8E8E93" FontSize="8.5" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <Border x:Name="FocusHotkeyRecorder" Grid.Column="1"
+                                            Background="#161618" CornerRadius="6"
+                                            Padding="10,5" VerticalAlignment="Center" Cursor="Hand"
+                                            MinWidth="85" BorderThickness="1"
+                                            BorderBrush="#333336">
+                                        <TextBlock x:Name="FocusHotkeyLabel"
+                                                   Foreground="#F5F5F7" FontSize="10"
+                                                   HorizontalAlignment="Center"
+                                                   FontFamily="Consolas"/>
+                                    </Border>
+                                </Grid>
+
+                                <Border Height="1" Background="#2A2A2E" Margin="0,10"/>
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="{DynamicResource FocusLyricsTitle}"
+                                                   Foreground="#F5F5F7" FontSize="11" FontWeight="Medium"/>
+                                        <TextBlock Text="{DynamicResource FocusLyricsDescription}"
+                                                   Foreground="#8E8E93" FontSize="8.5" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <CheckBox x:Name="EnableLyricsToggle" Grid.Column="1"
+                                              Style="{StaticResource SettingsToggle}"
+                                              VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <Border Height="1" Background="#2A2A2E" Margin="0,10"/>
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="{DynamicResource FocusHideNotchTitle}"
+                                                   Foreground="#F5F5F7" FontSize="11" FontWeight="Medium"/>
+                                        <TextBlock Text="{DynamicResource FocusHideNotchDescription}"
+                                                   Foreground="#8E8E93" FontSize="8.5" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <CheckBox x:Name="HideNotchToggle" Grid.Column="1"
+                                              Style="{StaticResource SettingsToggle}"
+                                              VerticalAlignment="Center"/>
+                                </Grid>
+                            </StackPanel>
                         </Border>
                     </StackPanel>
                 </ScrollViewer>

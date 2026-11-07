@@ -2,11 +2,11 @@
 #define MyAppExeName "Notchi.exe"
 
 #ifndef MyAppVersion
-  #define MyAppVersion "2.0.0"
+  #define MyAppVersion "2.1.0"
 #endif
 
 #ifndef MyAppVersionNumeric
-  #define MyAppVersionNumeric "2.0.0.0"
+  #define MyAppVersionNumeric "2.1.0.0"
 #endif
 
 [Setup]

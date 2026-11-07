@@ -28,6 +28,8 @@ namespace WindowsNotch
         private IHost? _host;
         private CancellationTokenSource? _cts;
         private readonly ConcurrentDictionary<Guid, WebSocketClientSession> _clients = new();
+        private readonly object _volumeSync = new();
+        private AudioVolumeService? _volumeService;
 
         public event Action<string>? OnFileReceived;
         public event Action<string>? OnTextReceived;
@@ -538,6 +540,37 @@ namespace WindowsNotch
                         client.UnsubscribeStatus();
                         if (id != null) await client.SendMessageAsync(new { type = "ack", id });
                         break;
+
+                    case "volume.set":
+                        if (root.TryGetProperty("data", out var volumeSetData) &&
+                            volumeSetData.TryGetProperty("level", out var levelProp) &&
+                            levelProp.ValueKind == JsonValueKind.Number)
+                        {
+                            SetVolume(levelProp.GetDouble());
+                            BroadcastVolumeState();
+                        }
+                        if (id != null) await client.SendMessageAsync(new { type = "ack", id });
+                        break;
+
+                    case "volume.mute":
+                        if (root.TryGetProperty("data", out var muteData) &&
+                            muteData.TryGetProperty("muted", out var mutedProp))
+                        {
+                            SetMuted(mutedProp.ValueKind == JsonValueKind.True);
+                            BroadcastVolumeState();
+                        }
+                        if (id != null) await client.SendMessageAsync(new { type = "ack", id });
+                        break;
+
+                    case "volume.toggle":
+                        ToggleMuted();
+                        BroadcastVolumeState();
+                        if (id != null) await client.SendMessageAsync(new { type = "ack", id });
+                        break;
+
+                    case "volume.get":
+                        await client.SendMessageAsync(new { type = "volume.state", data = BuildVolumePayload() });
+                        break;
                 }
             }
             catch (Exception ex)
@@ -547,6 +580,55 @@ namespace WindowsNotch
                     type = "error",
                     data = new { code = "bad_request", message = ex.Message }
                 });
+            }
+        }
+
+        // ==================== VOLUME ====================
+
+        private AudioVolumeService GetVolumeLocked() => _volumeService ??= new AudioVolumeService();
+
+        public object BuildVolumePayload()
+        {
+            lock (_volumeSync)
+            {
+                var volume = GetVolumeLocked();
+                return new { level = volume.Volume, muted = volume.IsMuted };
+            }
+        }
+
+        private void SetVolume(double level)
+        {
+            lock (_volumeSync)
+            {
+                GetVolumeLocked().Volume = (float)Math.Clamp(level, 0.0, 1.0);
+            }
+        }
+
+        private void SetMuted(bool muted)
+        {
+            lock (_volumeSync)
+            {
+                GetVolumeLocked().IsMuted = muted;
+            }
+        }
+
+        private void ToggleMuted()
+        {
+            lock (_volumeSync)
+            {
+                var volume = GetVolumeLocked();
+                volume.IsMuted = !volume.IsMuted;
+            }
+        }
+
+        private void BroadcastVolumeState()
+        {
+            var payload = BuildVolumePayload();
+            var message = new { type = "volume.state", data = payload };
+
+            foreach (var client in _clients.Values)
+            {
+                _ = client.SendMessageAsync(message);
             }
         }
 
@@ -690,6 +772,17 @@ namespace WindowsNotch
         public void Dispose()
         {
             _smtcService.MediaChanged -= BroadcastMediaState;
+
+            try
+            {
+                lock (_volumeSync)
+                {
+                    _volumeService?.Dispose();
+                    _volumeService = null;
+                }
+            }
+            catch { }
+
             _ = StopAsync();
         }
     }
@@ -732,6 +825,13 @@ namespace WindowsNotch
             {
                 type = "media.state",
                 data = mediaState
+            });
+
+            // 3. Kirim volume.state saat ini sekali
+            await SendMessageAsync(new
+            {
+                type = "volume.state",
+                data = _server.BuildVolumePayload()
             });
 
             var buffer = new byte[4096];

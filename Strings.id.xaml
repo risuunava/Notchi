@@ -15,6 +15,11 @@
 
     <sys:String x:Key="Metrics">METRIK</sys:String>
     <sys:String x:Key="NoRecentMedia">Belum ada media terakhir</sys:String>
+    <sys:String x:Key="VolumeMute">Matikan suara</sys:String>
+    <sys:String x:Key="VolumeUnmute">Nyalakan suara</sys:String>
+    <sys:String x:Key="VolumeSection">VOLUME</sys:String>
+    <sys:String x:Key="VolumeTitle">Volume sistem</sys:String>
+    <sys:String x:Key="VolumeDescription">Atur volume speaker</sys:String>
     <sys:String x:Key="Battery">Baterai</sys:String>
     <sys:String x:Key="System">SISTEM</sys:String>
 
@@ -98,7 +103,8 @@
 
     <sys:String x:Key="RestartApp">Restart Notchi</sys:String>
 
-    <sys:String x:Key="RestartingApp">Merestart Notchi...</sys:String>
+    <sys:String x:Key="RestartingApp">Merestart Notchi...</sys:String>
+
     <sys:String x:Key="CalendarNotePlaceholder">Catatan tanggal ini...</sys:String>
     <sys:String x:Key="Save">Simpan</sys:String>
     <sys:String x:Key="Delete">Hapus</sys:String>
@@ -114,5 +120,28 @@
     <sys:String x:Key="PairedDevices">Perangkat Terhubung</sys:String>
     <sys:String x:Key="NoPairedDevices">Belum ada perangkat terhubung</sys:String>
     <sys:String x:Key="Revoke">Cabut</sys:String>
+
+    <sys:String x:Key="FocusMode">Mode fokus media</sys:String>
+    <sys:String x:Key="FocusSection">FOKUS MEDIA</sys:String>
+    <sys:String x:Key="FocusHotkeyTitle">Buka / tutup mode fokus</sys:String>
+    <sys:String x:Key="FocusHotkeyDescription">Tekan kombinasi untuk mengubah</sys:String>
+    <sys:String x:Key="FocusLyricsTitle">Tampilkan lirik</sys:String>
+    <sys:String x:Key="FocusLyricsDescription">Ambil lirik dari LRCLIB bila tersedia</sys:String>
+    <sys:String x:Key="FocusHideNotchTitle">Sembunyikan notch</sys:String>
+    <sys:String x:Key="FocusHideNotchDescription">Notch disembunyikan selama mode fokus</sys:String>
+    <sys:String x:Key="HotkeyConflict">Kombinasi sudah dipakai</sys:String>
+    <sys:String x:Key="FocusNowPlaying">SEDANG DIPUTAR</sys:String>
+    <sys:String x:Key="FocusHeader">FOKUS MEDIA</sys:String>
+    <sys:String x:Key="FocusClose">Tutup</sys:String>
+    <sys:String x:Key="NoMediaPlaying">Tidak ada media diputar</sys:String>
+    <sys:String x:Key="NoMediaHint">Buka pemutar musik untuk memulai</sys:String>
+    <sys:String x:Key="LyricsTitle">LIRIK</sys:String>
+    <sys:String x:Key="LyricsLoading">Memuat lirik...</sys:String>
+    <sys:String x:Key="NoLyrics">Lirik tidak tersedia</sys:String>
+    <sys:String x:Key="LyricsOffline">Lirik tidak dapat dimuat</sys:String>
+    <sys:String x:Key="LyricsDisabled">Lirik dinonaktifkan</sys:String>
+    <sys:String x:Key="Instrumental">Lagu instrumental</sys:String>
+    <sys:String x:Key="LyricsAttribution">Lirik via LRCLIB</sys:String>
+    <sys:String x:Key="NoLyricsHint">Visualizer dan detail lagu ditampilkan</sys:String>
 </ResourceDictionary>
 
