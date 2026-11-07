@@ -6,10 +6,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <Version>2.0.0</Version>
-    <AssemblyVersion>2.0.0.0</AssemblyVersion>
-    <FileVersion>2.0.0.0</FileVersion>
-    <InformationalVersion>2.0.0</InformationalVersion>
+    <Version>2.1.0</Version>
+    <AssemblyVersion>2.1.0.0</AssemblyVersion>
+    <FileVersion>2.1.0.0</FileVersion>
+    <InformationalVersion>2.1.0</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <Product>Notchi</Product>
     <Company>risuunava</Company>
@@ -20,6 +20,9 @@
   <ItemGroup>
     <Resource Include="assets\icon.ico" />
     <Resource Include="assets\icon.png" />
+    <Resource Include="assets\layer blur blue.png" />
+    <Resource Include="assets\layer blur green.png" />
+    <Resource Include="assets\layer blur red.png" />
   </ItemGroup>
 
   <ItemGroup>
