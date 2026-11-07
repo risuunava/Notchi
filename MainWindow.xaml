@@ -961,6 +961,24 @@
                         </Viewbox>
                     </Border>
                 </Button>
+                <Button x:Name="FocusButton"
+                        Style="{StaticResource FeatureMenuIconButton}"
+                        Margin="4,0,0,0"
+                        ToolTip="{DynamicResource FocusMode}">
+                    <Border x:Name="FocusIconBorder"
+                            Width="20" Height="20" CornerRadius="10"
+                            Background="Transparent"
+                            SnapsToDevicePixels="True"
+                            HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Viewbox Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Path x:Name="FocusIconPath"
+                                  Data="M4.5,9.5 V2.8 L10.5,1.3 V8 M3.1,9.5 A1.4,1.1 0 1 0 5.9,9.5 A1.4,1.1 0 1 0 3.1,9.5 Z M9.1,8 A1.4,1.1 0 1 0 11.9,8 A1.4,1.1 0 1 0 9.1,8 Z"
+                                  Stroke="#F5F5F7" StrokeThickness="1.2"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                  StrokeLineJoin="Round" Fill="Transparent"/>
+                        </Viewbox>
+                    </Border>
+                </Button>
                 <Button x:Name="SettingsButton"
                         Style="{StaticResource FeatureMenuIconButton}"
                         Margin="4,0,0,0"
