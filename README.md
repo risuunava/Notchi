@@ -84,9 +84,9 @@ The screenshots below show the compact and expanded states of the main views.
 
 | Version | Released | Status |
 | :--- | :--- | :--- |
-| 2.0.0 | October 31, 2026 | Latest stable |
+| 2.1.0 | November 7, 2026 | Latest stable |
 
-Version 2.0.0 is the current stable release. It introduces a redesigned feature bar, a paginated idle view with Calendar, Last media, and Metrics pages, per-date calendar notes, and built-in PDF/DOCX/DOC conversion, along with draggable popups that remember their position and snap magnetically to screen edges. Full release notes are available on the [Releases](https://github.com/risuunava/Notchi/releases) page.
+Version 2.1.0 is the current stable release. It adds Media Focus mode, a non-activating 760x380 card with live playback controls, album art, synced lyrics from LRCLIB, a visualizer fallback, and a dedicated global hotkey (`Ctrl+Shift+M`). The release also adds a focus button to the feature bar and options to enable lyrics and hide the notch while focus mode is active. Full release notes are available on the [Releases](https://github.com/risuunava/Notchi/releases) page.
 
 ## Contributing
 

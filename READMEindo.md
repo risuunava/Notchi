@@ -84,9 +84,9 @@ Tangkapan layar berikut menunjukkan tampilan ringkas dan mengembang dari setiap 
 
 | Versi | Tanggal Rilis | Status |
 | :--- | :--- | :--- |
-| 2.0.0 | 31 Oktober 2026 | Stabil terbaru |
+| 2.1.0 | 7 November 2026 | Stabil terbaru |
 
-Versi 2.0.0 adalah rilis stabil saat ini. Rilis ini menghadirkan feature bar yang didesain ulang, tampilan idle berpaginasi dengan halaman Kalender, Media terakhir, dan Metrik, catatan per tanggal pada kalender, serta konversi PDF/DOCX/DOC bawaan, bersama popup yang dapat digeser, mengingat posisinya, dan menempel magnetis ke tepi layar. Catatan rilis selengkapnya tersedia di halaman [Releases](https://github.com/risuunava/Notchi/releases).
+Versi 2.1.0 adalah rilis stabil saat ini. Rilis ini menghadirkan mode Fokus Media berupa kartu 760x380 yang tidak mengambil fokus, lengkap dengan kontrol pemutaran, sampul album, lirik sinkron dari LRCLIB, visualizer sebagai cadangan, dan hotkey global khusus (`Ctrl+Shift+M`). Rilis ini juga menambahkan tombol fokus pada feature bar serta opsi untuk mengaktifkan lirik dan menyembunyikan notch selama mode fokus aktif. Catatan rilis selengkapnya tersedia di halaman [Releases](https://github.com/risuunava/Notchi/releases).
 
 ## Kontribusi
 
