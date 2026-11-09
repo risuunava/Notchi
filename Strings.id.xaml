@@ -33,6 +33,7 @@
 
     <sys:String x:Key="DropFilesHere">Lepaskan file di sini</sys:String>
     <sys:String x:Key="DropToPath">Ke path</sys:String>
+    <sys:String x:Key="ShareToMobile">Bagikan ke HP</sys:String>
     <sys:String x:Key="DropToConvert">Ke konversi</sys:String>
     <sys:String x:Key="DropToConvertDownloads">Ke konversi (Downloads)</sys:String>
 
@@ -93,6 +94,15 @@
     <sys:String x:Key="RemoveItem">Hapus</sys:String>
     <sys:String x:Key="OpenAll">Buka semua</sys:String>
     <sys:String x:Key="Clear">Bersihkan</sys:String>
+    <sys:String x:Key="SendToMobile">Kirim ke HP</sys:String>
+    <sys:String x:Key="SendAllToMobile">Kirim Semua ke HP</sys:String>
+    <sys:String x:Key="SendingToMobile">Mengirim {0} ke ponsel...</sys:String>
+    <sys:String x:Key="SentToMobile">Terkirim: {0}</sys:String>
+    <sys:String x:Key="SentManyToMobile">{0} file terkirim ke ponsel.</sys:String>
+    <sys:String x:Key="NoMobileConnected">Tidak ada ponsel yang terhubung</sys:String>
+    <sys:String x:Key="SendFolderNotSupported">Folder tidak dapat dikirim langsung.</sys:String>
+    <sys:String x:Key="NoFilesToSend">Tidak ada file untuk dikirim.</sys:String>
+    <sys:String x:Key="SendFailed">Gagal mengirim file ke ponsel.</sys:String>
 
     <sys:String x:Key="FileCountLabel">File ({0})</sys:String>
 

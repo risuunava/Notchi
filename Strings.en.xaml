@@ -33,6 +33,7 @@
 
     <sys:String x:Key="DropFilesHere">Drop files here</sys:String>
     <sys:String x:Key="DropToPath">Drop to path</sys:String>
+    <sys:String x:Key="ShareToMobile">Share to Mobile</sys:String>
     <sys:String x:Key="DropToConvert">Drop to convert</sys:String>
     <sys:String x:Key="DropToConvertDownloads">Convert to Downloads</sys:String>
 
@@ -93,6 +94,15 @@
     <sys:String x:Key="RemoveItem">Remove</sys:String>
     <sys:String x:Key="OpenAll">Open all</sys:String>
     <sys:String x:Key="Clear">Clear</sys:String>
+    <sys:String x:Key="SendToMobile">Send to Phone</sys:String>
+    <sys:String x:Key="SendAllToMobile">Send All to Phone</sys:String>
+    <sys:String x:Key="SendingToMobile">Sending {0} to phone...</sys:String>
+    <sys:String x:Key="SentToMobile">Sent: {0}</sys:String>
+    <sys:String x:Key="SentManyToMobile">{0} files sent to phone.</sys:String>
+    <sys:String x:Key="NoMobileConnected">No mobile device connected</sys:String>
+    <sys:String x:Key="SendFolderNotSupported">Directories cannot be sent directly.</sys:String>
+    <sys:String x:Key="NoFilesToSend">No files to send.</sys:String>
+    <sys:String x:Key="SendFailed">Failed to send file to phone.</sys:String>
 
     <sys:String x:Key="FileCountLabel">Files ({0})</sys:String>
 

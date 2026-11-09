@@ -28,6 +28,7 @@ namespace WindowsNotch
         private IHost? _host;
         private CancellationTokenSource? _cts;
         private readonly ConcurrentDictionary<Guid, WebSocketClientSession> _clients = new();
+        private readonly ConcurrentDictionary<string, string> _sharedFiles = new();
         private readonly object _volumeSync = new();
         private AudioVolumeService? _volumeService;
 
@@ -35,6 +36,7 @@ namespace WindowsNotch
         public event Action<string>? OnTextReceived;
 
         public bool IsRunning => _host != null;
+        public bool HasConnectedClients => !_clients.IsEmpty;
 
         public MobileServerService(SmtcService smtcService, SystemStatusService systemStatusService)
         {
@@ -100,6 +102,9 @@ namespace WindowsNotch
 
                         // 5. POST /shelf
                         endpoints.MapPost("/shelf", HandleShelfUploadAsync);
+
+                        // 5b. GET /shelf/file
+                        endpoints.MapGet("/shelf/file", HandleShelfFileDownloadAsync);
 
                         // 6. DELETE /devices/me
                         endpoints.MapDelete("/devices/me", HandleDeleteDeviceAsync);
@@ -441,6 +446,69 @@ namespace WindowsNotch
             await WriteErrorAsync(context, "bad_request", "Tidak ada part 'file' atau 'text' di request.");
         }
 
+        private async Task HandleShelfFileDownloadAsync(HttpContext context)
+        {
+            var device = Authenticate(context);
+            if (device == null)
+            {
+                context.Response.StatusCode = 401;
+                await WriteErrorAsync(context, "invalid_token", "Session token tidak valid atau sudah dicabut.");
+                return;
+            }
+
+            string? fileId = context.Request.Query["id"].ToString();
+            if (string.IsNullOrWhiteSpace(fileId) || !_sharedFiles.TryGetValue(fileId, out var filePath))
+            {
+                context.Response.StatusCode = 404;
+                await WriteErrorAsync(context, "file_not_found", "File tidak ditemukan atau link sudah kedaluwarsa.");
+                return;
+            }
+
+            if (!File.Exists(filePath))
+            {
+                context.Response.StatusCode = 404;
+                await WriteErrorAsync(context, "file_not_found", "File fisik tidak ada di disk.");
+                return;
+            }
+
+            string fileName = Path.GetFileName(filePath);
+            context.Response.StatusCode = 200;
+            context.Response.ContentType = "application/octet-stream";
+            context.Response.Headers[HeaderNames.ContentDisposition] = $"attachment; filename=\"{Uri.EscapeDataString(fileName)}\"";
+            context.Response.ContentLength = new FileInfo(filePath).Length;
+
+            await context.Response.SendFileAsync(filePath);
+        }
+
+        public async Task<bool> SendShelfFileAsync(string filePath)
+        {
+            if (!File.Exists(filePath) || _clients.IsEmpty) return false;
+
+            string fileId = Guid.NewGuid().ToString("N");
+            _sharedFiles[fileId] = filePath;
+
+            var fileInfo = new FileInfo(filePath);
+            var message = new
+            {
+                type = "shelf.file",
+                data = new
+                {
+                    id = fileId,
+                    name = fileInfo.Name,
+                    size = fileInfo.Length
+                }
+            };
+
+            bool sentAny = false;
+            foreach (var client in _clients.Values)
+            {
+                await client.SendMessageAsync(message);
+                sentAny = true;
+            }
+
+            return sentAny;
+        }
+
         private async Task HandleWebSocketAsync(HttpContext context)
         {
             if (!context.WebSockets.IsWebSocketRequest)
@@ -570,6 +638,10 @@ namespace WindowsNotch
 
                     case "volume.get":
                         await client.SendMessageAsync(new { type = "volume.state", data = BuildVolumePayload() });
+                        break;
+
+                    case "shelf.ack":
+                        if (id != null) await client.SendMessageAsync(new { type = "ack", id });
                         break;
                 }
             }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -2055,7 +2055,7 @@ namespace WindowsNotch
             _collapseTimer.Start();
         }
 
-        private void OnPillDrop(object sender, DragEventArgs e)
+        private async void OnPillDrop(object sender, DragEventArgs e)
         {
             if (!TryGetDroppedPaths(e.Data, out var paths))
             {
@@ -2081,7 +2081,43 @@ namespace WindowsNotch
                 return;
             }
 
-            ShowDropShelf(paths);
+            // "Share to Mobile" drop zone: auto-send files directly to connected phone
+            var server = MobileServerService.Instance;
+            if (server == null || !server.HasConnectedClients)
+            {
+                ShowStatusPopup(Localization.Get("NoMobileConnected"), isError: true);
+                return;
+            }
+
+            string[] filePaths = paths
+                .Where(File.Exists)
+                .ToArray();
+
+            if (filePaths.Length == 0)
+            {
+                ShowStatusPopup(Localization.Get("SendFolderNotSupported"), isError: true);
+                return;
+            }
+
+            if (filePaths.Length == 1)
+            {
+                string name = System.IO.Path.GetFileName(filePaths[0]);
+                ShowStatusPopup(Localization.Format("SendingToMobile", name), isError: false);
+                bool ok = await server.SendShelfFileAsync(filePaths[0]);
+                ShowStatusPopup(ok
+                    ? Localization.Format("SentToMobile", name)
+                    : Localization.Get("SendFailed"), isError: !ok);
+            }
+            else
+            {
+                ShowStatusPopup(Localization.Format("SendingToMobile", filePaths.Length + " files"), isError: false);
+                int sent = 0;
+                foreach (string path in filePaths)
+                {
+                    if (await server.SendShelfFileAsync(path)) sent++;
+                }
+                ShowStatusPopup(Localization.Format("SentManyToMobile", sent), isError: false);
+            }
         }
 
         private bool IsDropToConversion(DragEventArgs e)

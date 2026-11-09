@@ -35,6 +35,7 @@ namespace WindowsNotch
             CloseButton.Click += (s, e) => RequestClose();
             OpenAllButton.Click += (s, e) => OpenAll();
             ClearButton.Click += (s, e) => ClearItems();
+            SendAllButton.Click += (s, e) => OnSendAllClick(s, (RoutedEventArgs)e);
 
             var headerDrag = new WindowDragHelper(this, HeaderRow);
             headerDrag.DragEnded += (s, e) => PositionSaved?.Invoke(this, EventArgs.Empty);
@@ -222,6 +223,54 @@ namespace WindowsNotch
             RefreshList();
             SetStatus("", isError: false);
             ItemsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private async void OnSendToMobileClick(object sender, RoutedEventArgs e)
+        {
+            if (GetItem(sender) is not { } item) return;
+
+            if (item.IsDirectory)
+            {
+                SetStatus(Localization.Get("SendFolderNotSupported"), isError: true);
+                return;
+            }
+
+            var server = MobileServerService.Instance;
+            if (server == null || !server.HasConnectedClients)
+            {
+                SetStatus(Localization.Get("NoMobileConnected"), isError: true);
+                return;
+            }
+
+            SetStatus(Localization.Format("SendingToMobile", item.Name), isError: false);
+            bool ok = await server.SendShelfFileAsync(item.Path);
+            SetStatus(ok
+                ? Localization.Format("SentToMobile", item.Name)
+                : Localization.Get("SendFailed"), isError: !ok);
+        }
+
+        private async void OnSendAllClick(object sender, RoutedEventArgs e)
+        {
+            var server = MobileServerService.Instance;
+            if (server == null || !server.HasConnectedClients)
+            {
+                SetStatus(Localization.Get("NoMobileConnected"), isError: true);
+                return;
+            }
+
+            var files = _items.Where(i => !i.IsDirectory).ToList();
+            if (files.Count == 0)
+            {
+                SetStatus(Localization.Get("NoFilesToSend"), isError: true);
+                return;
+            }
+
+            int sent = 0;
+            foreach (var file in files)
+            {
+                if (await server.SendShelfFileAsync(file.Path)) sent++;
+            }
+            SetStatus(Localization.Format("SentManyToMobile", sent), isError: false);
         }
 
         private static bool IsInteractive(DependencyObject? obj)
