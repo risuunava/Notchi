@@ -133,6 +133,7 @@
     <sys:String x:Key="FocusNowPlaying">SEDANG DIPUTAR</sys:String>
     <sys:String x:Key="FocusHeader">FOKUS MEDIA</sys:String>
     <sys:String x:Key="FocusClose">Tutup</sys:String>
+    <sys:String x:Key="FocusCompact">Mode ringkas</sys:String>
     <sys:String x:Key="NoMediaPlaying">Tidak ada media diputar</sys:String>
     <sys:String x:Key="NoMediaHint">Buka pemutar musik untuk memulai</sys:String>
     <sys:String x:Key="LyricsTitle">LIRIK</sys:String>

@@ -213,30 +213,66 @@
                 <Grid x:Name="DragHeader" Grid.Row="0"
                       Margin="24,14,18,0" Background="Transparent"
                       Cursor="SizeAll">
-                    <TextBlock Text="{DynamicResource FocusNowPlaying}"
+                    <TextBlock x:Name="HeaderText"
+                               Text="{DynamicResource FocusNowPlaying}"
                                Foreground="{StaticResource FocusMutedBrush}"
                                FontSize="9" FontWeight="SemiBold"
                                VerticalAlignment="Center"/>
-
-                    <Button x:Name="CloseButton"
-                            HorizontalAlignment="Right"
-                            Style="{StaticResource FocusIconButton}"
-                            Width="28" Height="28"
-                            ToolTip="{DynamicResource FocusClose}">
-                        <Path Data="M0,0 L10,10 M10,0 L0,10"
-                              Stroke="{StaticResource FocusSoftBrush}"
-                              StrokeThickness="1.4"
-                              StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
-                    </Button>
                 </Grid>
 
-                <Grid Grid.Row="1" Margin="24,10,24,20">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="208"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
+                <StackPanel x:Name="HeaderActions"
+                            Grid.Row="0"
+                            Panel.ZIndex="10"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Margin="0,14,18,0"
+                            Opacity="1"
+                            IsHitTestVisible="True">
+                    <Button x:Name="CompactButton"
+                            Style="{StaticResource FocusIconButton}"
+                            Width="24" Height="24"
+                            Margin="0,0,4,0"
+                            ToolTip="{DynamicResource FocusCompact}">
+                        <Viewbox Width="12" Height="12">
+                            <Path Data="M2,1 H12 A1.5,1.5 0 0 1 13.5,2.5 V12.5 A1.5,1.5 0 0 1 12,14 H2 A1.5,1.5 0 0 1 0.5,12.5 V2.5 A1.5,1.5 0 0 1 2,1 Z M7,1 V14"
+                                  Stroke="{StaticResource FocusSoftBrush}"
+                                  StrokeThickness="1.5"
+                                  StrokeLineJoin="Round"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"/>
+                        </Viewbox>
+                    </Button>
 
-                    <Grid Grid.Column="0">
+                    <Button x:Name="CloseButton"
+                            Style="{StaticResource FocusIconButton}"
+                            Width="24" Height="24"
+                            ToolTip="{DynamicResource FocusClose}">
+                        <Viewbox Width="12" Height="12">
+                            <Path Data="M1,1 L13,13 M13,1 L1,13"
+                                  Stroke="{StaticResource FocusSoftBrush}"
+                                  StrokeThickness="1.5"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                        </Viewbox>
+                    </Button>
+                </StackPanel>
+
+                <Grid x:Name="Viewport" Grid.Row="1" Margin="24,10,24,20"
+                      ClipToBounds="True">
+                    <Grid x:Name="SlideHost" HorizontalAlignment="Left">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition x:Name="NowPlayingColumn" Width="208"/>
+                            <ColumnDefinition x:Name="LyricsColumn" Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition x:Name="NowPlayingRow" Height="*"/>
+                            <RowDefinition x:Name="LyricsRow" Height="0"/>
+                        </Grid.RowDefinitions>
+
+                        <Grid x:Name="NowPlayingPage" Grid.Row="0" Grid.Column="0">
+                            <Grid.RenderTransform>
+                                <TranslateTransform x:Name="NowPlayingTranslate"/>
+                            </Grid.RenderTransform>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
@@ -374,6 +410,7 @@
                                     Margin="12,0">
                                 <Path x:Name="PlayPausePath"
                                       Data="M0,0 L12,7 L0,14 Z"
+                                      Margin="1.5,0,0,0"
                                       Fill="#101014"
                                       HorizontalAlignment="Center"
                                       VerticalAlignment="Center"/>
@@ -391,7 +428,10 @@
                         </StackPanel>
                     </Grid>
 
-                    <Grid Grid.Column="1" Margin="26,0,0,0">
+                        <Grid x:Name="LyricsPage" Grid.Row="0" Grid.Column="1" Margin="26,0,0,0">
+                        <Grid.RenderTransform>
+                            <TranslateTransform x:Name="LyricsTranslate"/>
+                        </Grid.RenderTransform>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
@@ -399,7 +439,8 @@
                         </Grid.RowDefinitions>
 
                         <Grid Grid.Row="0">
-                            <TextBlock Text="{DynamicResource LyricsTitle}"
+                            <TextBlock x:Name="LyricsTitleText"
+                                       Text="{DynamicResource LyricsTitle}"
                                        Foreground="{StaticResource FocusMutedBrush}"
                                        FontSize="9"
                                        FontWeight="SemiBold"
@@ -532,8 +573,22 @@
                                    FontSize="8"
                                    HorizontalAlignment="Right"
                                    Visibility="Collapsed"/>
+                        </Grid>
                     </Grid>
                 </Grid>
+
+                <StackPanel x:Name="PageDots" Grid.Row="1"
+                            Orientation="Vertical"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Margin="0,0,14,0"
+                            Visibility="Collapsed">
+                    <Ellipse x:Name="PageDot0" Width="6" Height="6"
+                             Fill="#FFFFFFFF" Margin="0,3" Cursor="Hand"/>
+                    <Ellipse x:Name="PageDot1" Width="6" Height="6"
+                             Fill="#FFFFFFFF" Opacity="0.35"
+                             Margin="0,3" Cursor="Hand"/>
+                </StackPanel>
             </Grid>
         </Border>
     </Grid>

@@ -132,6 +132,7 @@
     <sys:String x:Key="FocusNowPlaying">NOW PLAYING</sys:String>
     <sys:String x:Key="FocusHeader">MEDIA FOCUS</sys:String>
     <sys:String x:Key="FocusClose">Close</sys:String>
+    <sys:String x:Key="FocusCompact">Compact mode</sys:String>
     <sys:String x:Key="NoMediaPlaying">No media playing</sys:String>
     <sys:String x:Key="NoMediaHint">Open a music player to get started</sys:String>
     <sys:String x:Key="LyricsTitle">LYRICS</sys:String>

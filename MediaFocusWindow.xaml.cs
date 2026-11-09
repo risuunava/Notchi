@@ -23,16 +23,55 @@ namespace WindowsNotch
         private const int WsExNoActivate = 0x08000000;
         private const int WsExToolWindow = 0x00000080;
 
+        private const double CompactWidth = 344;
+        private const double CompactHeight = 460;
+        private const double CompactCoverSize = 200;
+        private const double WideCoverSize = 150;
+        private const double WheelPageThreshold = 60;
+        private static readonly TimeSpan PageSwitchCooldown =
+            TimeSpan.FromMilliseconds(300);
+        private static readonly TimeSpan PageSlideDuration =
+            TimeSpan.FromMilliseconds(240);
+
         private static readonly SolidColorBrush ActiveLyricBrush = Frozen(0xFF, 0xFF, 0xFF);
         private static readonly SolidColorBrush InactiveLyricBrush = Frozen(0x78, 0x78, 0x80);
         private static readonly SolidColorBrush IdleAccentBrush = Frozen(0x6C, 0x7B, 0xFF);
         private static readonly Color IdleAccent = Color.FromRgb(0x6C, 0x7B, 0xFF);
+
+        private const uint MonitorDefaultToNearest = 2;
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct NativeRect
+        {
+            public int Left;
+            public int Top;
+            public int Right;
+            public int Bottom;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct FocusMonitorInfo
+        {
+            public int Size;
+            public NativeRect Monitor;
+            public NativeRect Work;
+            public uint Flags;
+        }
 
         [DllImport("user32.dll")]
         private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
 
         [DllImport("user32.dll")]
         private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr MonitorFromWindow(IntPtr hWnd, uint flags);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        private static extern bool GetMonitorInfo(IntPtr monitor, ref FocusMonitorInfo info);
+
+        [DllImport("user32.dll")]
+        private static extern uint GetDpiForWindow(IntPtr hWnd);
 
         private readonly SmtcService _smtc;
         private readonly AppSettings _settings;
@@ -59,6 +98,17 @@ namespace WindowsNotch
         private bool _isSeeking;
         private bool _isClosing;
         private bool _isLoaded;
+        private bool _compactMode;
+        private bool _layoutUpdating;
+        private bool _headerActionsVisible = true;
+        private bool _pointerOver;
+        private int _compactPage;
+        private double _wideWidth;
+        private double _wideHeight;
+        private double _wideLeft;
+        private double _wideTop;
+        private double _wheelAccum;
+        private DateTime _lastPageSwitchUtc = DateTime.MinValue;
         private Color _accentColor = IdleAccent;
         private SolidColorBrush _accentBrush = IdleAccentBrush;
         private SolidColorBrush _accentSoftBrush = IdleAccentBrush;
@@ -209,6 +259,19 @@ namespace WindowsNotch
         private void WireControls()
         {
             CloseButton.Click += (_, _) => CloseAnimated();
+            CompactButton.Click += (_, _) => SetCompactMode(!_compactMode);
+
+            Root.PreviewMouseWheel += OnRootMouseWheel;
+            Viewport.SizeChanged += (_, _) =>
+            {
+                if (_compactMode) ApplyLayout();
+            };
+
+            PageDot0.MouseLeftButtonDown += (_, _) => SetCompactPage(0, true);
+            PageDot1.MouseLeftButtonDown += (_, _) => SetCompactPage(1, true);
+
+            Root.MouseEnter += (_, _) => OnPointerOverChanged(true);
+            Root.MouseLeave += (_, _) => OnPointerOverChanged(false);
 
             PrevButton.Click += async (_, _) => await _smtc.PreviousAsync();
             PlayPauseButton.Click += async (_, _) => await _smtc.PlayPauseAsync();
@@ -250,6 +313,352 @@ namespace WindowsNotch
             }
 
             return false;
+        }
+
+        private void OnPointerOverChanged(bool over)
+        {
+            if (_pointerOver == over) return;
+
+            _pointerOver = over;
+            UpdateHeaderActions();
+        }
+
+        private void UpdateHeaderActions()
+        {
+            bool show = !_compactMode || _pointerOver;
+
+            if (_headerActionsVisible == show) return;
+
+            _headerActionsVisible = show;
+
+            if (show)
+            {
+                HeaderActions.IsHitTestVisible = true;
+            }
+
+            var fade = new DoubleAnimation(
+                show ? 1 : 0,
+                new Duration(TimeSpan.FromMilliseconds(150)))
+            {
+                EasingFunction = new QuadraticEase
+                {
+                    EasingMode = show ? EasingMode.EaseOut : EasingMode.EaseIn
+                }
+            };
+
+            fade.Completed += (_, _) =>
+            {
+                if (!show)
+                {
+                    HeaderActions.IsHitTestVisible = false;
+                }
+            };
+
+            HeaderActions.BeginAnimation(OpacityProperty, fade);
+        }
+
+        private void SetCompactMode(bool compact)
+        {
+            if (_compactMode == compact) return;
+
+            if (compact)
+            {
+                _wideWidth = Width;
+                _wideHeight = Height;
+                _wideLeft = Left;
+                _wideTop = Top;
+            }
+
+            _compactMode = compact;
+            _compactPage = 0;
+            _wheelAccum = 0;
+
+            PageDots.Visibility = compact ? Visibility.Visible : Visibility.Collapsed;
+            LyricsTitleText.Visibility = compact
+                ? Visibility.Collapsed
+                : Visibility.Visible;
+            LyricsPage.ClipToBounds = compact;
+            UpdateHeaderLabel();
+            UpdateHeaderActions();
+
+            ApplyWindowBounds(compact);
+            UpdateLayout();
+            ApplyLayout();
+            UpdatePageDots();
+            RefreshLyricsLayout();
+        }
+
+        private Rect GetWorkArea()
+        {
+            var hwnd = new WindowInteropHelper(this).Handle;
+            if (hwnd == IntPtr.Zero) return SystemParameters.WorkArea;
+
+            IntPtr monitor = MonitorFromWindow(hwnd, MonitorDefaultToNearest);
+            if (monitor == IntPtr.Zero) return SystemParameters.WorkArea;
+
+            var info = new FocusMonitorInfo
+            {
+                Size = Marshal.SizeOf<FocusMonitorInfo>()
+            };
+
+            if (!GetMonitorInfo(monitor, ref info)) return SystemParameters.WorkArea;
+
+            double scale = 1.0;
+            uint dpi = GetDpiForWindow(hwnd);
+            if (dpi > 0)
+            {
+                scale = dpi / 96.0;
+            }
+            else
+            {
+                var visual = VisualTreeHelper.GetDpi(this);
+                if (visual.DpiScaleX > 0) scale = visual.DpiScaleX;
+            }
+
+            if (scale <= 0) scale = 1.0;
+
+            return new Rect(
+                info.Work.Left / scale,
+                info.Work.Top / scale,
+                (info.Work.Right - info.Work.Left) / scale,
+                (info.Work.Bottom - info.Work.Top) / scale);
+        }
+
+        private void ApplyWindowBounds(bool compact)
+        {
+            var work = GetWorkArea();
+
+            double targetWidth = compact ? CompactWidth : _wideWidth;
+            double targetHeight = compact ? CompactHeight : _wideHeight;
+
+            targetWidth = Math.Min(targetWidth, Math.Max(1, work.Width));
+            targetHeight = Math.Min(targetHeight, Math.Max(1, work.Height));
+
+            double targetLeft = compact
+                ? _wideLeft + (_wideWidth - targetWidth) / 2
+                : _wideLeft;
+            double targetTop = compact
+                ? _wideTop + (_wideHeight - targetHeight) / 2
+                : _wideTop;
+
+            Left = Math.Clamp(targetLeft, work.Left,
+                Math.Max(work.Left, work.Right - targetWidth));
+            Top = Math.Clamp(targetTop, work.Top,
+                Math.Max(work.Top, work.Bottom - targetHeight));
+
+            Width = targetWidth;
+            Height = targetHeight;
+        }
+
+        private void ApplyLayout()
+        {
+            if (_layoutUpdating) return;
+            _layoutUpdating = true;
+
+            try
+            {
+                if (_compactMode)
+                {
+                    double pageWidth = Math.Max(1, Viewport.ActualWidth);
+                    double pageHeight = Math.Max(1, Viewport.ActualHeight);
+
+                    NowPlayingColumn.Width = new GridLength(pageWidth);
+                    LyricsColumn.Width = new GridLength(0);
+
+                    NowPlayingRow.Height = new GridLength(pageHeight);
+                    LyricsRow.Height = new GridLength(pageHeight);
+
+                    SlideHost.HorizontalAlignment = HorizontalAlignment.Stretch;
+                    SlideHost.VerticalAlignment = VerticalAlignment.Top;
+                    SlideHost.Width = pageWidth;
+                    SlideHost.Height = pageHeight * 2;
+
+                    Grid.SetRow(NowPlayingPage, 0);
+                    Grid.SetColumn(NowPlayingPage, 0);
+                    Grid.SetRow(LyricsPage, 1);
+                    Grid.SetColumn(LyricsPage, 0);
+
+                    NowPlayingPage.Margin = new Thickness(0);
+                    LyricsPage.Margin = new Thickness(0);
+                    LyricsPage.ClipToBounds = true;
+
+                    CoverBorder.Width = CompactCoverSize;
+                    CoverBorder.Height = CompactCoverSize;
+                    CoverBorder.HorizontalAlignment = HorizontalAlignment.Left;
+
+                    SetPageOffset(-_compactPage * pageHeight);
+                }
+                else
+                {
+                    NowPlayingColumn.Width = new GridLength(208);
+                    LyricsColumn.Width = new GridLength(1, GridUnitType.Star);
+
+                    NowPlayingRow.Height = new GridLength(1, GridUnitType.Star);
+                    LyricsRow.Height = new GridLength(0);
+
+                    SlideHost.HorizontalAlignment = HorizontalAlignment.Stretch;
+                    SlideHost.VerticalAlignment = VerticalAlignment.Stretch;
+                    SlideHost.Width = double.NaN;
+                    SlideHost.Height = double.NaN;
+
+                    Grid.SetRow(NowPlayingPage, 0);
+                    Grid.SetColumn(NowPlayingPage, 0);
+                    Grid.SetRow(LyricsPage, 0);
+                    Grid.SetColumn(LyricsPage, 1);
+
+                    NowPlayingPage.Margin = new Thickness(0);
+                    LyricsPage.Margin = new Thickness(26, 0, 0, 0);
+                    LyricsPage.ClipToBounds = false;
+
+                    CoverBorder.Width = WideCoverSize;
+                    CoverBorder.Height = WideCoverSize;
+                    CoverBorder.HorizontalAlignment = HorizontalAlignment.Left;
+
+                    SetPageOffset(0);
+                }
+            }
+            finally
+            {
+                _layoutUpdating = false;
+            }
+        }
+
+        private void SetCompactPage(int page, bool animate)
+        {
+            if (!_compactMode) return;
+
+            page = Math.Clamp(page, 0, 1);
+            if (page == _compactPage) return;
+
+            _compactPage = page;
+            UpdateHeaderLabel();
+            UpdatePageDots();
+
+            double pageHeight = Math.Max(1, Viewport.ActualHeight);
+            double target = -page * pageHeight;
+
+            if (animate)
+            {
+                AnimatePageOffset(target);
+            }
+            else
+            {
+                SetPageOffset(target);
+            }
+
+            if (page == 1) RefreshLyricsLayout();
+        }
+
+        private void SetPageOffset(double y)
+        {
+            NowPlayingTranslate.BeginAnimation(TranslateTransform.YProperty, null);
+            LyricsTranslate.BeginAnimation(TranslateTransform.YProperty, null);
+
+            NowPlayingTranslate.X = 0;
+            LyricsTranslate.X = 0;
+            NowPlayingTranslate.Y = y;
+            LyricsTranslate.Y = y;
+        }
+
+        private void AnimatePageOffset(double target)
+        {
+            double current = NowPlayingTranslate.Y;
+
+            NowPlayingTranslate.BeginAnimation(TranslateTransform.YProperty, null);
+            LyricsTranslate.BeginAnimation(TranslateTransform.YProperty, null);
+
+            NowPlayingTranslate.X = 0;
+            LyricsTranslate.X = 0;
+            NowPlayingTranslate.Y = current;
+            LyricsTranslate.Y = current;
+
+            var easing = new CubicEase { EasingMode = EasingMode.EaseInOut };
+
+            NowPlayingTranslate.BeginAnimation(
+                TranslateTransform.YProperty,
+                new DoubleAnimation(current, target, PageSlideDuration)
+                {
+                    EasingFunction = easing
+                });
+
+            LyricsTranslate.BeginAnimation(
+                TranslateTransform.YProperty,
+                new DoubleAnimation(current, target, PageSlideDuration)
+                {
+                    EasingFunction = easing
+                });
+        }
+
+        private void OnRootMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (!_compactMode) return;
+
+            e.Handled = true;
+
+            if (_compactPage == 0 && e.Delta > 0)
+            {
+                _wheelAccum = 0;
+                return;
+            }
+
+            if (_compactPage == 1 && e.Delta < 0)
+            {
+                _wheelAccum = 0;
+                return;
+            }
+
+            var now = DateTime.UtcNow;
+            if (now - _lastPageSwitchUtc < PageSwitchCooldown)
+            {
+                _wheelAccum = 0;
+                return;
+            }
+
+            _wheelAccum += e.Delta;
+
+            if (_wheelAccum <= -WheelPageThreshold)
+            {
+                _wheelAccum = 0;
+                _lastPageSwitchUtc = now;
+                SetCompactPage(1, animate: true);
+            }
+            else if (_wheelAccum >= WheelPageThreshold)
+            {
+                _wheelAccum = 0;
+                _lastPageSwitchUtc = now;
+                SetCompactPage(0, animate: true);
+            }
+        }
+
+        private void UpdateHeaderLabel()
+        {
+            HeaderText.SetResourceReference(TextBlock.TextProperty,
+                _compactMode && _compactPage == 1
+                    ? "LyricsTitle"
+                    : "FocusNowPlaying");
+        }
+
+        private void UpdatePageDots()
+        {
+            PageDot0.Opacity = _compactPage == 0 ? 1 : 0.35;
+            PageDot1.Opacity = _compactPage == 1 ? 1 : 0.35;
+        }
+
+        private void RefreshLyricsLayout()
+        {
+            if (!_isLoaded) return;
+
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+            {
+                if (!IsLoaded) return;
+
+                UpdateLyricSpacers();
+
+                if (_lyricsState == LyricsPanelState.Synced && _activeLyricIndex >= 0)
+                {
+                    ScrollToLyric(_activeLyricIndex);
+                }
+            }));
         }
 
         private void CommitSeek()
@@ -330,6 +739,7 @@ namespace WindowsNotch
             ControlsPanel.IsEnabled = false;
 
             PlayPausePath.Data = Geometry.Parse("M0,0 L12,7 L0,14 Z");
+            PlayPausePath.Margin = new Thickness(1.5, 0, 0, 0);
 
             ShowEmptyState(
                 Localization.Get("NoMediaPlaying"),
@@ -483,6 +893,7 @@ namespace WindowsNotch
             PlayPausePath.Data = Geometry.Parse(isPlaying
                 ? "M0,0 h4 v14 h-4 z M8,0 h4 v14 h-4 z"
                 : "M0,0 L12,7 L0,14 Z");
+            PlayPausePath.Margin = isPlaying ? new Thickness(0) : new Thickness(1.5, 0, 0, 0);
         }
 
         private void OnProgressTick(object? sender, EventArgs e)
