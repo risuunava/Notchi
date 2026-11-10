@@ -106,6 +106,12 @@ The screenshots below show the compact and expanded states of the main views.
 
 Version 2.1.0 is the current stable release. It introduces Media Focus mode (a 760 x 380 non-activating card with live playback controls, synced lyrics from LRCLIB, ambient artwork glow, visualizer fallback, and dedicated hotkey `Ctrl+Shift+M`), Notchi Mobile Companion integration with QR pairing, system volume synchronization, and drop shelf file sharing. This release also brings Dome mode, bottom-center screen anchoring with adaptive popups, a layered notch sleeve silhouette, and a segmented settings interface. Full release notes are available on the [Releases](https://github.com/risuunava/Notchi/releases) page.
 
+## Install Notchi Mobile
+
+Get the latest version of **Notchi Mobile** and enjoy the updated experience.
+
+[Download & Install Notchi Mobile](https://github.com/risuunava/notchi-mobile/releases)
+
 ## Contributing
 
 Contributions are welcome, including bug reports, feature proposals, documentation improvements, and pull requests. Before contributing, read [CONTRIBUTORS.md](CONTRIBUTORS.md) for the contributor list, roles, and contribution workflow. For significant changes, open an issue first so the approach can be discussed.
