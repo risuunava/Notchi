@@ -33,20 +33,24 @@ Unduh `NotchiSetup-x64.exe` versi terbaru dari halaman [Releases](https://github
 | :--- | :--- |
 | Overlay selalu di atas | Menjaga notch tetap terlihat di atas jendela lain tanpa muncul di taskbar. |
 | Mode ringkas dan mengembang | Tampil ringkas saat idle dan mengembang dengan animasi halus saat kursor diarahkan. |
+| Dome mode | Klik dua kali pada notch untuk menyusutkannya menjadi lengkungan hitam minimalis di tepi layar. |
 | Tampilan idle berpaginasi | Tampilan idle yang mengembang memiliki tiga halaman yang dinavigasi dengan scroll mouse: Kalender, Media terakhir, dan Metrik, dengan transisi animasi. |
-| Kontrol media | Terintegrasi dengan Windows System Media Transport Controls untuk judul lagu, artis, album art, aplikasi sumber, waktu berjalan, durasi, seek, play/pause, serta previous/next. |
+| Kontrol media | Terintegrasi dengan Windows System Media Transport Controls untuk judul lagu, artis, album art, aplikasi sumber, waktu berjalan, durasi, seek, play/pause, serta previous/next. Warna progress bar beradaptasi mengikuti aplikasi sumber. |
+| Mode Fokus Media | Kartu jendela 760 x 380 non-activating khusus pemutar musik dengan lirik sinkron dari LRCLIB, efek pendaran sampul album, fallback visualizer, dan hotkey khusus (`Ctrl+Shift+M`). |
 | Media terakhir | Mengingat lagu terakhir yang diputar, termasuk album art, kontrol pemutaran, dan seek, setelah sesi media berakhir. |
 | Dashboard sistem | Menampilkan jam ringkas yang bersih dengan gradasi halus pada waktu, tanggal, serta bar CPU, RAM, disk, dan baterai secara langsung. |
 | Catatan kalender | Klik tanggal mana pun untuk membuat, mengubah, atau menghapus catatan. Tanggal dengan catatan menampilkan titik indikator dan pratinjau saat hover, serta Shift + scroll untuk berpindah tanggal. |
 | Catatan | Menyediakan jendela catatan khusus yang dapat diubah ukurannya dengan penyimpanan otomatis. |
 | File drop shelf | Menerima file yang ditarik ke notch dan mendukung membuka file, menampilkan di Explorer, menyalin path, membuka semua item, menghapus item satu per satu, serta membersihkan daftar. |
+| Berbagi ke mobile | Tarik file ke drop shelf notch untuk mengirimkannya langsung ke perangkat mobile yang terhubung. |
+| Notchi Mobile Companion | Layanan internal Kestrel HTTP dan WebSocket untuk pairing instan lewat QR code, sinkronisasi volume sistem, dan manajemen perangkat mobile. |
 | Konversi file | Tarik file PDF, DOC, atau DOCX ke notch untuk mengonversi PDF ke DOCX atau dokumen Word ke PDF langsung ke folder Downloads, dengan progres inline dan deteksi PDF hasil scan. |
 | Feature bar | Bar bawah dengan indikator aktif di mana hanya satu panel yang terbuka pada satu waktu, beranimasi keluar dari logo tengah. Klik logo untuk memulai ulang aplikasi. |
 | Jendela dapat digeser | Popup catatan, file shelf, dan pengaturan dapat digeser, mengingat posisi terakhirnya, dan menempel magnetis ke tepi layar. |
-| Penempatan di layar | Notch dapat digeser ke atas tengah, kiri tengah, atau kanan tengah layar. |
+| Penempatan di layar | Mendukung docking notch di atas tengah, bawah tengah, kiri tengah, atau kanan tengah layar dengan orientasi popup yang adaptif. |
 | Posisi tersimpan | Menyimpan anchor terakhir dan memulihkannya saat aplikasi dibuka kembali. |
-| Pintasan global | Menyembunyikan atau menampilkan notch dari mana saja menggunakan pintasan sistem yang dapat disesuaikan (default `Ctrl+Shift+N`). |
-| Pengaturan | Mengatur bahasa antarmuka (Bahasa Indonesia atau English), pintasan sembunyikan/tampilkan, dan apakah aplikasi berjalan otomatis saat Windows menyala. Metrik selalu tampil saat mengembang. |
+| Pintasan global | Pintasan sistem yang dapat disesuaikan untuk menyembunyikan/menampilkan notch (`Ctrl+Shift+N`) dan membuka Fokus Media (`Ctrl+Shift+M`). |
+| Pengaturan | Tampilan baru dengan tab tersegmentasi (Umum, Tampilan, Fokus Media, Perangkat Mobile, Pintasan), perekam kombinasi tombol, pilihan bahasa, dan pengelolaan perangkat mobile. |
 | Desain ringan | Menggunakan rendering native WPF dengan pemakaian CPU idle rendah dan memori privat di bawah 100 MB. |
 
 ## Tampilan
@@ -84,9 +88,9 @@ Tangkapan layar berikut menunjukkan tampilan ringkas dan mengembang dari setiap 
 
 | Versi | Tanggal Rilis | Status |
 | :--- | :--- | :--- |
-| 2.1.0 | 7 November 2026 | Stabil terbaru |
+| 2.1.0 | 10 November 2026 | Stabil terbaru |
 
-Versi 2.1.0 adalah rilis stabil saat ini. Rilis ini menghadirkan mode Fokus Media berupa kartu 760x380 yang tidak mengambil fokus, lengkap dengan kontrol pemutaran, sampul album, lirik sinkron dari LRCLIB, visualizer sebagai cadangan, dan hotkey global khusus (`Ctrl+Shift+M`). Rilis ini juga menambahkan tombol fokus pada feature bar serta opsi untuk mengaktifkan lirik dan menyembunyikan notch selama mode fokus aktif. Catatan rilis selengkapnya tersedia di halaman [Releases](https://github.com/risuunava/Notchi/releases).
+Versi 2.1.0 adalah rilis stabil saat ini. Rilis ini menghadirkan mode Fokus Media (kartu 760 x 380 non-activating dengan kontrol pemutaran, lirik sinkron dari LRCLIB, pendaran sampul album, visualizer cadangan, dan hotkey khusus `Ctrl+Shift+M`), integrasi Notchi Mobile Companion dengan pairing QR, sinkronisasi volume sistem, dan transfer file drop shelf. Pembaruan ini juga memperkenalkan Dome mode, penempatan layar bawah-tengah dengan popup adaptif, desain layered sleeve pada bodi notch, dan pengaturan bertab tersegmentasi. Catatan rilis selengkapnya tersedia di halaman [Releases](https://github.com/risuunava/Notchi/releases).
 
 ## Kontribusi
 

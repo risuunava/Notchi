@@ -33,20 +33,24 @@ Download the latest `NotchiSetup-x64.exe` from the [Releases](https://github.com
 | :--- | :--- |
 | Always-on-top overlay | Keeps the notch visible above other windows without appearing in the taskbar. |
 | Compact and expanded modes | Stays compact while idle and expands smoothly when the cursor moves over it. |
+| Dome mode | Double-click the notch to collapse it into a minimal, low-profile dark arch along the screen edge. |
 | Paginated idle view | The expanded idle state has three pages navigated with the mouse wheel: Calendar, Last media, and Metrics, with animated slide transitions. |
-| Media controls | Integrates with Windows System Media Transport Controls for track title, artist, album art, source app, elapsed time, duration, seeking, play/pause, and previous/next. |
+| Media controls | Integrates with Windows System Media Transport Controls for track title, artist, album art, source app, elapsed time, duration, seeking, play/pause, and previous/next. Progress bar dynamically tints to match the active source app. |
+| Media Focus mode | A dedicated 760 x 380 non-activating card window with synchronized lyrics from LRCLIB, dynamic cover art glow, visualizer fallback, and dedicated hotkey (`Ctrl+Shift+M`). |
 | Last media | Remembers the most recently played track, including artwork, playback controls, and seeking, after the media session ends. |
 | System dashboard | Displays a clean compact clock with a subtle time gradient, date, and live CPU, RAM, disk, and battery bars. |
 | Calendar notes | Click any date to create, edit, or delete a note. Dates with notes show an indicator dot and a hover preview, and Shift + scroll navigates between dates. |
 | Notes | Provides a dedicated, resizable notes window with automatic saving. |
 | File drop shelf | Accepts files dragged onto the notch and supports opening files, revealing them in Explorer, copying paths, opening all items, removing individual items, and clearing the list. |
+| Share to mobile | Drag files onto the notch drop shelf to transfer them directly to paired mobile devices. |
+| Mobile Companion | Built-in Kestrel HTTP and WebSocket service providing instant QR pairing, system volume synchronization, and mobile device management. |
 | File conversion | Drag PDF, DOC, or DOCX files onto the notch to convert PDF to DOCX or Word documents to PDF directly into Downloads, with inline progress and scanned-PDF detection. |
 | Feature bar | A bottom bar with active indicators where only one panel opens at a time, animated outward from the center logo. Clicking the logo restarts the app. |
 | Draggable windows | The note, file shelf, and settings popups can be dragged, remember their last position, and snap magnetically to screen edges. |
-| Screen anchoring | Lets the notch be dragged to the top center, left center, or right center of the screen. |
+| Screen anchoring | Supports docking the notch at top center, bottom center, left center, or right center of the screen with adaptive layout orientation. |
 | Persistent position | Saves the last anchor and restores it on the next launch. |
-| Global shortcut | Hides or shows the notch from anywhere using a customizable system-wide shortcut (default `Ctrl+Shift+N`). |
-| Settings | Controls the interface language (Bahasa Indonesia or English), the hide/show shortcut, and whether the app starts with Windows. Metrics are always visible when expanded. |
+| Global shortcuts | Customizable system-wide hotkeys for toggling the notch (`Ctrl+Shift+N`) and Media Focus mode (`Ctrl+Shift+M`). |
+| Settings | Redesigned with segmented tabs (General, Appearance, Media Focus, Mobile Devices, Hotkeys), interactive hotkey recording, language selection, and paired device management. |
 | Lightweight design | Uses native WPF rendering with low idle CPU usage and private memory below 100 MB. |
 
 ## Preview
@@ -84,9 +88,9 @@ The screenshots below show the compact and expanded states of the main views.
 
 | Version | Released | Status |
 | :--- | :--- | :--- |
-| 2.1.0 | November 7, 2026 | Latest stable |
+| 2.1.0 | November 10, 2026 | Latest stable |
 
-Version 2.1.0 is the current stable release. It adds Media Focus mode, a non-activating 760x380 card with live playback controls, album art, synced lyrics from LRCLIB, a visualizer fallback, and a dedicated global hotkey (`Ctrl+Shift+M`). The release also adds a focus button to the feature bar and options to enable lyrics and hide the notch while focus mode is active. Full release notes are available on the [Releases](https://github.com/risuunava/Notchi/releases) page.
+Version 2.1.0 is the current stable release. It introduces Media Focus mode (a 760 x 380 non-activating card with live playback controls, synced lyrics from LRCLIB, ambient artwork glow, visualizer fallback, and dedicated hotkey `Ctrl+Shift+M`), Notchi Mobile Companion integration with QR pairing, system volume synchronization, and drop shelf file sharing. This release also brings Dome mode, bottom-center screen anchoring with adaptive popups, a layered notch sleeve silhouette, and a segmented settings interface. Full release notes are available on the [Releases](https://github.com/risuunava/Notchi/releases) page.
 
 ## Contributing
 
