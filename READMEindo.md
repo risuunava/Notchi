@@ -57,32 +57,46 @@ Unduh `NotchiSetup-x64.exe` versi terbaru dari halaman [Releases](https://github
 
 Tangkapan layar berikut menunjukkan tampilan ringkas dan mengembang dari setiap bagian utama.
 
-**Menu fitur**
-
-<p align="center">
-  <img src="assets/preview/ss-menu-close.png" alt="Menu fitur ringkas" width="380" />
-  &nbsp;&nbsp;
-  <img src="assets/preview/ss-menu-open.png" alt="Menu fitur mengembang" width="380" />
-</p>
-<p align="center"><sub>Ringkas dan mengembang</sub></p>
-
-**Pemutar media**
-
-<p align="center">
-  <img src="assets/preview/ss-music-close.png" alt="Pemutar media ringkas" width="380" />
-  &nbsp;&nbsp;
-  <img src="assets/preview/ss-music-open.png" alt="Pemutar media mengembang" width="380" />
-</p>
-<p align="center"><sub>Ringkas dan mengembang</sub></p>
-
-**Mode sisi**
-
-<p align="center">
-  <img src="assets/preview/ss-side-music-close.png" alt="Mode sisi ringkas" height="200" />
-  &nbsp;&nbsp;
-  <img src="assets/preview/ss-side-music-open.png" alt="Mode sisi mengembang" height="200" />
-</p>
-<p align="center"><sub>Ringkas dan mengembang</sub></p>
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="assets/preview/compact-mode.png" alt="Notch ringkas saat idle" height="130" /><br />
+      <sub><b>Mode ringkas</b> &middot; jam saat idle</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="assets/preview/side.png" alt="Mode sisi" height="130" /><br />
+      <sub><b>Mode sisi</b> &middot; menempel di tepi layar</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <img src="assets/preview/menu.png" alt="Menu fitur dengan kalender" width="540" /><br />
+      <sub><b>Menu fitur</b> &middot; kalender, catatan, file, media, dan pengaturan</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="assets/preview/compact-media-player.png" alt="Pemutar media ringkas" width="340" /><br />
+      <sub><b>Media ringkas</b> &middot; lagu yang diputar sekilas</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="assets/preview/media-player.png" alt="Pemutar media mengembang" width="400" /><br />
+      <sub><b>Media mengembang</b> &middot; album art, seek, dan kontrol pemutaran</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <img src="assets/preview/media-player-focus.png" alt="Fokus Media di atas desktop" width="720" /><br />
+      <sub><b>Fokus Media</b> &middot; kartu lirik sinkron di atas desktop</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <img src="assets/preview/compact-media-player-focus.png" alt="Fokus Media di atas aplikasi" width="720" /><br />
+      <sub><b>Fokus Media</b> &middot; kartu non-activating saat bekerja</sub>
+    </td>
+  </tr>
+</table>
 
 ## Pembaruan Terakhir
 

@@ -57,32 +57,46 @@ Download the latest `NotchiSetup-x64.exe` from the [Releases](https://github.com
 
 The screenshots below show the compact and expanded states of the main views.
 
-**Feature menu**
-
-<p align="center">
-  <img src="assets/preview/ss-menu-close.png" alt="Compact feature menu" width="380" />
-  &nbsp;&nbsp;
-  <img src="assets/preview/ss-menu-open.png" alt="Expanded feature menu" width="380" />
-</p>
-<p align="center"><sub>Compact and expanded</sub></p>
-
-**Media player**
-
-<p align="center">
-  <img src="assets/preview/ss-music-close.png" alt="Compact media player" width="380" />
-  &nbsp;&nbsp;
-  <img src="assets/preview/ss-music-open.png" alt="Expanded media player" width="380" />
-</p>
-<p align="center"><sub>Compact and expanded</sub></p>
-
-**Side anchor mode**
-
-<p align="center">
-  <img src="assets/preview/ss-side-music-close.png" alt="Compact side anchor" height="200" />
-  &nbsp;&nbsp;
-  <img src="assets/preview/ss-side-music-open.png" alt="Expanded side anchor" height="200" />
-</p>
-<p align="center"><sub>Compact and expanded</sub></p>
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="assets/preview/compact-mode.png" alt="Compact idle notch" height="130" /><br />
+      <sub><b>Compact mode</b> &middot; idle clock</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="assets/preview/side.png" alt="Side anchor mode" height="130" /><br />
+      <sub><b>Side anchor</b> &middot; docked to the screen edge</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <img src="assets/preview/menu.png" alt="Feature menu with calendar" width="540" /><br />
+      <sub><b>Feature menu</b> &middot; calendar, notes, files, media, and settings</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="assets/preview/compact-media-player.png" alt="Compact media player" width="340" /><br />
+      <sub><b>Compact media</b> &middot; now playing at a glance</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="assets/preview/media-player.png" alt="Expanded media player" width="400" /><br />
+      <sub><b>Expanded media</b> &middot; artwork, seeking, and playback controls</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <img src="assets/preview/media-player-focus.png" alt="Media Focus over the desktop" width="720" /><br />
+      <sub><b>Media Focus</b> &middot; synced lyrics card over the desktop</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <img src="assets/preview/compact-media-player-focus.png" alt="Media Focus over an application" width="720" /><br />
+      <sub><b>Media Focus</b> &middot; non-activating card while you work</sub>
+    </td>
+  </tr>
+</table>
 
 ## Latest Update
 
